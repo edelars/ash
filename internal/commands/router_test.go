@@ -22,7 +22,7 @@ func TestCommandRouterSearchResult_addResult(t *testing.T) {
 	assert.Equal(t, 1, len(r.GetDataByPattern(p1)))
 	cc := r.GetDataByPattern(p1)
 	assert.Equal(t, 1, len(cc))
-	assert.Equal(t, int8(22), cc[0].GetCommands()[0].GetMathWeight())
+	assert.Equal(t, int8(44), cc[0].GetCommands()[0].GetMathWeight())
 
 	p2 := commands.NewPattern("qw123123")
 	cc2 := r.GetDataByPattern(p2)
