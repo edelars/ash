@@ -51,6 +51,14 @@ type CommandImpl struct {
 	W int8
 }
 
+func (commandimpl *CommandImpl) SetMathWeight(weight int8) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (commandimpl *CommandImpl) GetName() string {
+	panic("not implemented") // TODO: Implement
+}
+
 func (commandimpl *CommandImpl) GetExecFunc() commands.ExecF {
 	panic("not implemented") // TODO: Implement
 }

@@ -10,7 +10,9 @@ type ExecF func(ctx context.Context, internalContext internal_context.InternalCo
 
 type CommandIface interface {
 	GetMathWeight() int8 // 0-100%
+	SetMathWeight(weight int8)
 	GetExecFunc() ExecF
+	GetName() string
 }
 
 func NewCommand(name string, execFunc ExecF) *Command {
@@ -36,4 +38,8 @@ func (c *Command) SetMathWeight(weight int8) {
 
 func (c *Command) GetExecFunc() ExecF {
 	return c.execFunc
+}
+
+func (c *Command) GetName() string {
+	return c.name
 }
