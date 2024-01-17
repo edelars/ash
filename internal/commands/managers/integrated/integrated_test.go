@@ -7,7 +7,7 @@ import (
 
 	"ash/internal/commands"
 	"ash/internal/commands/managers/integrated/list"
-	"ash/internal/internal_context"
+	"ash/internal/dto"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -15,8 +15,8 @@ import (
 func Test_searchResult_GetSourceName(t *testing.T) {
 	type fields struct {
 		name         string
-		commandsData []commands.CommandIface
-		patternValue commands.PatternIface
+		commandsData []dto.CommandIface
+		patternValue dto.PatternIface
 	}
 	tests := []struct {
 		name   string
@@ -27,7 +27,7 @@ func Test_searchResult_GetSourceName(t *testing.T) {
 			name: "qwe",
 			fields: fields{
 				name:         "qwe",
-				commandsData: []commands.CommandIface{},
+				commandsData: []dto.CommandIface{},
 				patternValue: nil,
 			},
 			want: "qwe",
@@ -50,19 +50,19 @@ func Test_searchResult_GetSourceName(t *testing.T) {
 func Test_searchResult_GetPattern(t *testing.T) {
 	type fields struct {
 		name         string
-		commandsData []commands.CommandIface
-		patternValue commands.PatternIface
+		commandsData []dto.CommandIface
+		patternValue dto.PatternIface
 	}
 	tests := []struct {
 		name   string
 		fields fields
-		want   commands.PatternIface
+		want   dto.PatternIface
 	}{
 		{
 			name: "",
 			fields: fields{
 				name:         "",
-				commandsData: []commands.CommandIface{},
+				commandsData: []dto.CommandIface{},
 				patternValue: commands.NewPattern("333"),
 			},
 			want: commands.NewPattern("333"),
@@ -85,23 +85,23 @@ func Test_searchResult_GetPattern(t *testing.T) {
 func Test_searchResult_GetCommands(t *testing.T) {
 	type fields struct {
 		name         string
-		commandsData []commands.CommandIface
-		patternValue commands.PatternIface
+		commandsData []dto.CommandIface
+		patternValue dto.PatternIface
 	}
 	c := list.NewExitCommand()
 	tests := []struct {
 		name   string
 		fields fields
-		want   []commands.CommandIface
+		want   []dto.CommandIface
 	}{
 		{
 			name: "1",
 			fields: fields{
 				name:         "",
-				commandsData: []commands.CommandIface{c},
+				commandsData: []dto.CommandIface{c},
 				patternValue: nil,
 			},
-			want: []commands.CommandIface{c},
+			want: []dto.CommandIface{c},
 		},
 	}
 	for _, tt := range tests {
@@ -173,7 +173,7 @@ func Test_getStepValue(t *testing.T) {
 }
 
 func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
-	f := func(ctx context.Context, internalContext internal_context.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
 		panic("exit")
 	}
 	c1 := commands.NewCommand("exit", f)
@@ -181,7 +181,7 @@ func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
 	c3 := commands.NewCommand("gettalk", f)
 
 	type fields struct {
-		data []commands.CommandIface
+		data []dto.CommandIface
 	}
 	type args struct {
 		searchPattern string
@@ -196,46 +196,46 @@ func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
 		{
 			name: "100",
 			fields: fields{
-				data: []commands.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2},
 			},
 			args: args{
 				searchPattern: "exit",
-				founded:       map[commands.CommandIface]int8{},
+				founded:       map[dto.CommandIface]int8{},
 			},
-			want: map[commands.CommandIface]int8{c1: 100},
+			want: map[dto.CommandIface]int8{c1: 100},
 		},
 		{
 			name: "50",
 			fields: fields{
-				data: []commands.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2},
 			},
 			args: args{
 				searchPattern: "et",
-				founded:       map[commands.CommandIface]int8{},
+				founded:       map[dto.CommandIface]int8{},
 			},
-			want: map[commands.CommandIface]int8{c1: 50},
+			want: map[dto.CommandIface]int8{c1: 50},
 		},
 		{
 			name: "none",
 			fields: fields{
-				data: []commands.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2},
 			},
 			args: args{
 				searchPattern: "555",
-				founded:       map[commands.CommandIface]int8{},
+				founded:       map[dto.CommandIface]int8{},
 			},
-			want: map[commands.CommandIface]int8{},
+			want: map[dto.CommandIface]int8{},
 		},
 		{
 			name: "44",
 			fields: fields{
-				data: []commands.CommandIface{c2, c3},
+				data: []dto.CommandIface{c2, c3},
 			},
 			args: args{
 				searchPattern: "ttk",
-				founded:       map[commands.CommandIface]int8{},
+				founded:       map[dto.CommandIface]int8{},
 			},
-			want: map[commands.CommandIface]int8{c3: 44},
+			want: map[dto.CommandIface]int8{c3: 44},
 		},
 	}
 	for _, tt := range tests {
@@ -251,15 +251,15 @@ func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
 }
 
 func TestIntergatedManager_SearchCommands(t *testing.T) {
-	f := func(ctx context.Context, internalContext internal_context.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
 		panic("exit")
 	}
 	c1 := commands.NewCommand("exit", f)
 	c2 := commands.NewCommand("dobus", f)
 	c3 := commands.NewCommand("ggalk", f)
 
-	im := IntergatedManager{data: []commands.CommandIface{c1, c2, c3}}
-	ch := make(chan commands.CommandManagerSearchResult, 1)
+	im := IntergatedManager{data: []dto.CommandIface{c1, c2, c3}}
+	ch := make(chan dto.CommandManagerSearchResult, 1)
 	p := commands.NewPattern("ext")
 
 	im.SearchCommands(ch, p)

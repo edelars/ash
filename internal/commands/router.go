@@ -1,6 +1,10 @@
 package commands
 
-import "sync"
+import (
+	"sync"
+
+	"ash/internal/dto"
+)
 
 // 1. Internal commands
 // 2. Filesystems commands i.e. exec /usr/sbin/fdisk
@@ -13,11 +17,11 @@ func (r *CommandRouter) AddNewCommandManager(newCommandManager CommandManagerIfa
 	r.commandManagers = append(r.commandManagers, newCommandManager)
 }
 
-func (r *CommandRouter) SearchCommands(patterns ...PatternIface) commandRouterSearchResult {
+func (r *CommandRouter) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	var wg sync.WaitGroup
 	res := NewCommandRouterSearchResult()
 
-	resultChan := make(chan CommandManagerSearchResult, r.getCommandManagerCount())
+	resultChan := make(chan dto.CommandManagerSearchResult, r.getCommandManagerCount())
 	defer close(resultChan)
 
 	go func() {
@@ -37,7 +41,7 @@ func (r *CommandRouter) SearchCommands(patterns ...PatternIface) commandRouterSe
 
 	wg.Wait()
 
-	return res
+	return &res
 }
 
 func (r *CommandRouter) getCommandManagerCount() int {
@@ -57,30 +61,24 @@ func NewCommandRouter(commandManagers ...CommandManagerIface) CommandRouter {
 }
 
 type CommandManagerIface interface {
-	SearchCommands(resultChan chan CommandManagerSearchResult, patterns ...PatternIface)
-}
-
-type CommandManagerSearchResult interface {
-	GetSourceName() string
-	GetCommands() []CommandIface
-	GetPattern() PatternIface
+	SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface)
 }
 
 func NewCommandRouterSearchResult() commandRouterSearchResult {
 	c := commandRouterSearchResult{
-		data: make(map[PatternIface][]CommandManagerSearchResult),
+		data: make(map[dto.PatternIface][]dto.CommandManagerSearchResult),
 	}
 	return c
 }
 
 type commandRouterSearchResult struct {
-	data map[PatternIface][]CommandManagerSearchResult
+	data map[dto.PatternIface][]dto.CommandManagerSearchResult
 }
 
-func (c *commandRouterSearchResult) AddResult(searchResult CommandManagerSearchResult) {
+func (c *commandRouterSearchResult) AddResult(searchResult dto.CommandManagerSearchResult) {
 	c.data[searchResult.GetPattern()] = append(c.data[searchResult.GetPattern()], searchResult)
 }
 
-func (c *commandRouterSearchResult) GetDataByPattern(pattern PatternIface) []CommandManagerSearchResult {
+func (c *commandRouterSearchResult) GetDataByPattern(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
 	return c.data[pattern]
 }

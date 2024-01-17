@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"ash/internal/commands"
+	"ash/internal/dto"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +15,7 @@ func TestCommandRouterSearchResult_addResult(t *testing.T) {
 	c := CommandImpl{W: 44}
 	s1 := ManagerSearchResultImpl{
 		Source:   "3333",
-		Commands: []commands.CommandIface{&c},
+		Commands: []dto.CommandIface{&c},
 		Pattern:  p1,
 	}
 	r.AddResult(s1)
@@ -31,19 +32,19 @@ func TestCommandRouterSearchResult_addResult(t *testing.T) {
 
 type ManagerSearchResultImpl struct {
 	Source   string
-	Commands []commands.CommandIface
-	Pattern  commands.PatternIface
+	Commands []dto.CommandIface
+	Pattern  dto.PatternIface
 }
 
 func (managersearchresult ManagerSearchResultImpl) GetSourceName() string {
 	return managersearchresult.Source
 }
 
-func (managersearchresult ManagerSearchResultImpl) GetCommands() []commands.CommandIface {
+func (managersearchresult ManagerSearchResultImpl) GetCommands() []dto.CommandIface {
 	return managersearchresult.Commands
 }
 
-func (managersearchresult ManagerSearchResultImpl) GetPattern() commands.PatternIface {
+func (managersearchresult ManagerSearchResultImpl) GetPattern() dto.PatternIface {
 	return managersearchresult.Pattern
 }
 
@@ -59,7 +60,7 @@ func (commandimpl *CommandImpl) GetName() string {
 	panic("not implemented") // TODO: Implement
 }
 
-func (commandimpl *CommandImpl) GetExecFunc() commands.ExecF {
+func (commandimpl *CommandImpl) GetExecFunc() dto.ExecF {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -69,11 +70,11 @@ func (commandimpl CommandImpl) GetMathWeight() int8 {
 
 type CommandManagerImpl struct{}
 
-func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan commands.CommandManagerSearchResult, patterns ...commands.PatternIface) {
+func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	c := CommandImpl{W: 44}
 	resultChan <- ManagerSearchResultImpl{
 		Source:   "2",
-		Commands: []commands.CommandIface{&c},
+		Commands: []dto.CommandIface{&c},
 		Pattern:  patterns[0],
 	}
 }

@@ -1,19 +1,19 @@
 package integrated
 
 import (
-	"ash/internal/commands"
 	"ash/internal/commands/managers/integrated/list"
+	"ash/internal/dto"
 )
 
 type IntergatedManager struct {
-	data []commands.CommandIface
+	data []dto.CommandIface
 }
 
-func (m IntergatedManager) SearchCommands(resultChan chan commands.CommandManagerSearchResult, patterns ...commands.PatternIface) {
-	founded := make(map[commands.CommandIface]int8)
+func (m IntergatedManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+	founded := make(map[dto.CommandIface]int8)
 	for _, pattern := range patterns {
 		founded = m.searchPatternInCommands(pattern.GetPattern(), founded)
-		var arr []commands.CommandIface
+		var arr []dto.CommandIface
 		for c := range founded {
 			arr = append(arr, c)
 		}
@@ -31,7 +31,7 @@ func NewIntegratedManager() (im IntergatedManager) {
 	return im
 }
 
-type foundedData map[commands.CommandIface]int8
+type foundedData map[dto.CommandIface]int8
 
 // Search pattern in commands:
 // [cmd] - [pattern] = [result %]
@@ -72,18 +72,18 @@ func getStepValue(s string) int8 {
 
 type searchResult struct {
 	name         string
-	commandsData []commands.CommandIface
-	patternValue commands.PatternIface
+	commandsData []dto.CommandIface
+	patternValue dto.PatternIface
 }
 
 func (searchresult *searchResult) GetSourceName() string {
 	return searchresult.name
 }
 
-func (searchresult *searchResult) GetCommands() []commands.CommandIface {
+func (searchresult *searchResult) GetCommands() []dto.CommandIface {
 	return searchresult.commandsData
 }
 
-func (searchresult *searchResult) GetPattern() commands.PatternIface {
+func (searchresult *searchResult) GetPattern() dto.PatternIface {
 	return searchresult.patternValue
 }

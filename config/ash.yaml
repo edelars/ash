@@ -1,0 +1,10 @@
+keybindings:
+  - key: 13
+    action: ':Execute'
+  - key: 14
+    action: ':Autocomplete'
+  - key: 55
+    action: ':Exit'
+aliases:
+  - short: lg
+    full: lazygit
