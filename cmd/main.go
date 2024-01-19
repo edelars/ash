@@ -15,6 +15,7 @@ import (
 	"ash/internal/dto"
 	"ash/internal/executor"
 	"ash/internal/internal_context"
+	"ash/internal/keys_bindings"
 
 	"golang.org/x/term"
 )
@@ -48,7 +49,8 @@ func main() {
 
 	internalContext := internal_context.NewInternalContext(ctx, inputChan, outputChan, errs)
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
-	exec := executor.NewCommandExecutor(&commandRouter)
+	keyBindingsManager := keys_bindings.NewKeyBindingsManager(cfg, &commandRouter)
+	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
 
 	go processingInput(promptGenerator, &internalContext, exec)
 

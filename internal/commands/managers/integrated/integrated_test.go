@@ -267,3 +267,71 @@ func TestIntergatedManager_SearchCommands(t *testing.T) {
 	assert.Equal(t, 1, len(res.GetCommands()))
 	assert.Equal(t, "exit", res.GetCommands()[0].GetName())
 }
+
+func TestIntergatedManager_precisionSearchInCommands(t *testing.T) {
+	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+		panic("exit")
+	}
+	c1 := commands.NewCommand("exit", f)
+	c2 := commands.NewCommand("dobus", f)
+	c3 := commands.NewCommand("gettalk", f)
+
+	type fields struct {
+		data []dto.CommandIface
+	}
+	type args struct {
+		searchName string
+		founded    foundedData
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   foundedData
+	}{
+		{
+			name: "exit",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3},
+			},
+			args: args{
+				searchName: "exit",
+				founded:    map[dto.CommandIface]int8{},
+			},
+			want: map[dto.CommandIface]int8{c1: 100},
+		},
+		{
+			name: "gettalk",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3},
+			},
+			args: args{
+				searchName: "gettalk",
+				founded:    map[dto.CommandIface]int8{},
+			},
+			want: map[dto.CommandIface]int8{c3: 100},
+		},
+		{
+			name: "none",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3},
+			},
+			args: args{
+				searchName: "et",
+				founded:    map[dto.CommandIface]int8{},
+			},
+			want: map[dto.CommandIface]int8{},
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := IntergatedManager{
+				data: tt.fields.data,
+			}
+			if got := m.precisionSearchInCommands(tt.args.searchName, tt.args.founded); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("IntergatedManager.precisionSearchInCommands() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

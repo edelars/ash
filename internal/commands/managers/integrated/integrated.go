@@ -12,7 +12,11 @@ type IntergatedManager struct {
 func (m IntergatedManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	founded := make(map[dto.CommandIface]int8)
 	for _, pattern := range patterns {
-		founded = m.searchPatternInCommands(pattern.GetPattern(), founded)
+		if pattern.IsPrecisionSearch() {
+			founded = m.precisionSearchInCommands(pattern.GetPattern(), founded)
+		} else {
+			founded = m.searchPatternInCommands(pattern.GetPattern(), founded)
+		}
 		var arr []dto.CommandIface
 		for c := range founded {
 			arr = append(arr, c)
@@ -68,6 +72,15 @@ func getStepValue(s string) int8 {
 		return 0
 	}
 	return int8(100 / runeCount)
+}
+
+func (m IntergatedManager) precisionSearchInCommands(searchName string, founded foundedData) foundedData {
+	for _, cmd := range m.data {
+		if cmd.GetName() == searchName {
+			founded[cmd] = 100
+		}
+	}
+	return founded
 }
 
 type searchResult struct {

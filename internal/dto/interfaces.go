@@ -35,6 +35,7 @@ type InternalContextIface interface {
 	WithLastKeyPressed(b byte) InternalContextIface
 	WithCurrentInputBuffer(b []byte) InternalContextIface
 	GetCurrentInputBuffer() []byte
+	GetLastKeyPressed() byte
 	GetCTX() context.Context
 	GetInputChan() chan byte
 	GetOutputChan() chan byte

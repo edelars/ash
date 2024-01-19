@@ -64,3 +64,56 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigLoader_GetKeysBindings(t *testing.T) {
+	type fields struct {
+		Keybindings []KeyBind
+		Aliases     []Alias
+		Prompt      string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []struct {
+			Key    int
+			Action string
+		}
+	}{
+		{
+			name: "empty",
+			fields: fields{
+				Keybindings: []KeyBind{},
+				Aliases:     []Alias{},
+				Prompt:      "",
+			},
+			want: nil,
+		},
+		{
+			name: "1",
+			fields: fields{
+				Keybindings: []KeyBind{{13, "enter"}, {11, "done"}},
+				Aliases:     []Alias{},
+				Prompt:      "",
+			},
+			want: []struct {
+				Key    int
+				Action string
+			}{{13, "enter"}, {11, "done"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := ConfigLoader{
+				Keybindings: tt.fields.Keybindings,
+				Aliases:     tt.fields.Aliases,
+				Prompt:      tt.fields.Prompt,
+			}
+			if got := c.GetKeysBindings(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConfigLoader.GetAliases() = %v, want %v", got, tt.want)
+				t.Error(cap(c.GetKeysBindings()))
+				t.Error(cap(tt.want))
+
+			}
+		})
+	}
+}

@@ -23,7 +23,7 @@ func TestNewKeyBindingsManager(t *testing.T) {
 
 type confLoaderImpl struct{}
 
-func (c confLoaderImpl) GetAliases() []struct {
+func (c confLoaderImpl) GetKeysBindings() []struct {
 	Key    int
 	Action string
 } {

@@ -65,3 +65,7 @@ func (i InternalContext) GetOutputChan() chan byte {
 func (i InternalContext) GetErrChan() chan error {
 	return i.errs
 }
+
+func (i InternalContext) GetLastKeyPressed() byte {
+	return i.currentKeyPressed
+}

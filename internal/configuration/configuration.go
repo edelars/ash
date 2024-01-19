@@ -68,3 +68,21 @@ func getConfigFilename(startupFilename string, defaultConfigDir string) string {
 
 	return startupFilename
 }
+
+func (c ConfigLoader) GetKeysBindings() []struct {
+	Key    int
+	Action string
+} {
+	var res []struct {
+		Key    int
+		Action string
+	}
+
+	for _, kb := range c.Keybindings {
+		res = append(res, struct {
+			Key    int
+			Action string
+		}{kb.Key, kb.Action})
+	}
+	return res
+}

@@ -16,9 +16,9 @@ func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter command
 
 	m := make(map[string]int)
 
-	for _, alias := range configLoader.GetAliases() {
-		patterns = append(patterns, commands.NewPattern(alias.Action, true))
-		m[alias.Action] = alias.Key
+	for _, kb := range configLoader.GetKeysBindings() {
+		patterns = append(patterns, commands.NewPattern(kb.Action, true))
+		m[kb.Action] = kb.Key
 	}
 	sr := commandRouter.SearchCommands(patterns...)
 
@@ -37,7 +37,7 @@ func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter command
 
 type (
 	configLoaderIface interface {
-		GetAliases() []struct {
+		GetKeysBindings() []struct {
 			Key    int
 			Action string
 		}
