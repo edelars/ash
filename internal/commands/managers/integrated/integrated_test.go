@@ -63,9 +63,9 @@ func Test_searchResult_GetPattern(t *testing.T) {
 			fields: fields{
 				name:         "",
 				commandsData: []dto.CommandIface{},
-				patternValue: commands.NewPattern("333"),
+				patternValue: commands.NewPattern("333", false),
 			},
-			want: commands.NewPattern("333"),
+			want: commands.NewPattern("333", false),
 		},
 	}
 	for _, tt := range tests {
@@ -260,7 +260,7 @@ func TestIntergatedManager_SearchCommands(t *testing.T) {
 
 	im := IntergatedManager{data: []dto.CommandIface{c1, c2, c3}}
 	ch := make(chan dto.CommandManagerSearchResult, 1)
-	p := commands.NewPattern("ext")
+	p := commands.NewPattern("ext", false)
 
 	im.SearchCommands(ch, p)
 	res := <-ch

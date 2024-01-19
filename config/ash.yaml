@@ -8,3 +8,4 @@ keybindings:
 aliases:
   - short: lg
     full: lazygit
+prompt: 'ASH>'

@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -9,13 +10,14 @@ import (
 )
 
 const (
-	constMainConfigDefaultFilename = "ash"
+	constMainConfigDefaultFilename = "ash.yaml"
 	constMainConfigDefaultDir      = "ash"
 )
 
 type ConfigLoader struct {
 	Keybindings []KeyBind `yaml:"keybindings"`
 	Aliases     []Alias   `yaml:"aliases"`
+	Prompt      string    `yaml:"prompt"`
 }
 
 type KeyBind struct {
@@ -28,24 +30,35 @@ type Alias struct {
 	Full  string `yaml:"full"`
 }
 
-func NewConfigLoader(errs chan error) ConfigLoader {
+func NewConfigLoader() ConfigLoader {
 	startupConfig := newStartupConfigLoader()
 
 	mainConfigFilename := getConfigFilename(startupConfig.Options.ConfigDir, configdir.LocalConfig())
 	var config ConfigLoader
+
+	if _, err := os.Stat(mainConfigFilename); err != nil {
+		return newConfigLoaderWithDefaults()
+	}
 	// Read the file
 	data, err := os.ReadFile(mainConfigFilename)
 	if err != nil {
-		errs <- err
-		return config
+		return newConfigLoaderWithDefaults()
 	}
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		errs <- err
-		return config
+		return newConfigLoaderWithDefaults()
 	}
-	// fmt.Println(config)
+	fmt.Println(config)
 	return config
+}
+
+func newConfigLoaderWithDefaults() ConfigLoader {
+	c := ConfigLoader{
+		Keybindings: []KeyBind{{13, ":Execute"}, {14, ":Autocomplete"}},
+		Aliases:     []Alias{},
+		Prompt:      "ASH> ",
+	}
+	return c
 }
 
 func getConfigFilename(startupFilename string, defaultConfigDir string) string {

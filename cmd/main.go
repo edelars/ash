@@ -41,13 +41,13 @@ func main() {
 	go readInput(ctx, inputChan)
 	go writeOutput(ctx, outputChan)
 
-	configuration.NewConfigLoader(errs)
+	cfg := configuration.NewConfigLoader()
 
 	intergratedManager := integrated.NewIntegratedManager()
 	commandRouter := commands.NewCommandRouter(intergratedManager)
 
 	internalContext := internal_context.NewInternalContext(ctx, inputChan, outputChan, errs)
-	promptGenerator := command_prompt.NewCommandPromt()
+	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 	exec := executor.NewCommandExecutor(&commandRouter)
 
 	go processingInput(promptGenerator, &internalContext, exec)

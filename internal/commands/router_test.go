@@ -11,7 +11,7 @@ import (
 
 func TestCommandRouterSearchResult_addResult(t *testing.T) {
 	r := commands.NewCommandRouterSearchResult()
-	p1 := commands.NewPattern("qweq")
+	p1 := commands.NewPattern("qweq", false)
 	c := CommandImpl{W: 44}
 	s1 := ManagerSearchResultImpl{
 		Source:   "3333",
@@ -25,7 +25,7 @@ func TestCommandRouterSearchResult_addResult(t *testing.T) {
 	assert.Equal(t, 1, len(cc))
 	assert.Equal(t, int8(44), cc[0].GetCommands()[0].GetMathWeight())
 
-	p2 := commands.NewPattern("qw123123")
+	p2 := commands.NewPattern("qw123123", false)
 	cc2 := r.GetDataByPattern(p2)
 	assert.Equal(t, 0, len(cc2))
 }
@@ -82,7 +82,7 @@ func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.
 func TestCommandRouter_SearchCommands(t *testing.T) {
 	cm := CommandManagerImpl{}
 	cr := commands.NewCommandRouter(cm)
-	p1 := commands.NewPattern("123")
+	p1 := commands.NewPattern("123", false)
 
 	r := cr.SearchCommands(p1)
 	cc := r.GetDataByPattern(p1)

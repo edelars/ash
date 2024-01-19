@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -36,6 +37,29 @@ func Test_getConfigFilename(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getConfigFilename(tt.args.startupFilename, tt.args.defaultConfigDir); got != tt.want {
 				t.Errorf("getConfigFilename() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_newConfigLoaderWithDefaults(t *testing.T) {
+	tests := []struct {
+		name string
+		want ConfigLoader
+	}{
+		{
+			name: "defaults",
+			want: ConfigLoader{
+				Keybindings: []KeyBind{{13, ":Execute"}, {14, ":Autocomplete"}},
+				Aliases:     []Alias{},
+				Prompt:      "ASH> ",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := newConfigLoaderWithDefaults(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newConfigLoaderWithDefaults() = %v, want %v", got, tt.want)
 			}
 		})
 	}

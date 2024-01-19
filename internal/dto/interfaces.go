@@ -25,6 +25,7 @@ type ExecF func(ctx context.Context, internalContext InternalContextIface, input
 
 type PatternIface interface {
 	GetPattern() string
+	IsPrecisionSearch() bool
 }
 
 type InternalContextIface interface {

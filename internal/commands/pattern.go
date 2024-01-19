@@ -1,15 +1,21 @@
 package commands
 
-func NewPattern(pattern string) Pattern {
+func NewPattern(pattern string, precisionSearch bool) Pattern {
 	return Pattern{
-		value: pattern,
+		value:           pattern,
+		precisionSearch: precisionSearch,
 	}
 }
 
 type Pattern struct {
-	value string
+	value           string
+	precisionSearch bool
 }
 
 func (p Pattern) GetPattern() string {
 	return p.value
+}
+
+func (p Pattern) IsPrecisionSearch() bool {
+	return p.precisionSearch
 }
