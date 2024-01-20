@@ -31,7 +31,7 @@ func (m IntergatedManager) SearchCommands(resultChan chan dto.CommandManagerSear
 }
 
 func NewIntegratedManager() (im IntergatedManager) {
-	im.data = append(im.data, list.NewExitCommand())
+	im.data = append(im.data, list.NewExitCommand(), list.NewExecuteCommand())
 	return im
 }
 

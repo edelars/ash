@@ -1,12 +1,15 @@
 package executor
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	"ash/internal/commands"
 	"ash/internal/dto"
 	"ash/internal/internal_context"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_splitToArray(t *testing.T) {
@@ -71,7 +74,7 @@ func Test_splitToArray(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRes, gotArgs := splitToArray(tt.args.s)
+			gotRes, gotArgs := splitToArrays(tt.args.s)
 			if !reflect.DeepEqual(gotRes, tt.wantRes) {
 				t.Errorf("splitToArray() gotRes = %v, want %v", gotRes, tt.wantRes)
 			}
@@ -188,4 +191,26 @@ func (searchresult *searchResult) GetCommands() []dto.CommandIface {
 
 func (searchresult *searchResult) GetPattern() dto.PatternIface {
 	return searchresult.patternValue
+}
+
+func TestCommandExecutor_Execute(t *testing.T) {
+	cr := commRouterImpl{}
+	kb := keyBinderImpl{}
+	ce := NewCommandExecutor(cr, &kb)
+	ic := internal_context.NewInternalContext(context.Background(), nil, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]byte("get"))
+	ce.Execute(ic)
+	assert.Equal(t, true, kb.Success)
+}
+
+type keyBinderImpl struct {
+	Success bool
+}
+
+func (kb *keyBinderImpl) GetCommandByKey(key int) dto.CommandIface {
+	if key == 13 {
+		return commands.NewCommand("get", func(_ dto.InternalContextIface) {
+			kb.Success = true
+		})
+	}
+	return nil
 }

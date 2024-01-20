@@ -79,3 +79,11 @@ func (i InternalContext) WithExecutionList(executionList []dto.CommandIface) dto
 func (i InternalContext) GetExecutionList() []dto.CommandIface {
 	return i.executionList
 }
+
+func (i InternalContext) GetPrintFunction() func(msg string) {
+	return func(msg string) {
+		for _, b := range []byte(msg) {
+			i.GetOutputChan() <- b
+		}
+	}
+}

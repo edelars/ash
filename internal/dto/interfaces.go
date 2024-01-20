@@ -22,7 +22,7 @@ type CommandIface interface {
 	WithArgs(args string) CommandIface
 }
 
-type ExecF func(ctx context.Context, internalContext InternalContextIface, inputChan chan []byte, outputChan chan []byte)
+type ExecF func(internalC InternalContextIface)
 
 type PatternIface interface {
 	GetPattern() string
@@ -43,4 +43,5 @@ type InternalContextIface interface {
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface
 	GetExecutionList() []CommandIface
+	GetPrintFunction() func(msg string)
 }

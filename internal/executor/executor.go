@@ -27,14 +27,18 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 }
 
 func (r CommandExecutor) Execute(internalC dto.InternalContextIface) {
-	// mainCommand := r.keyBindingManager.GetCommandByKey(int(internalC.GetLastKeyPressed()))
-	internalC.GetOutputChan() <- byte(44)
+	if mainCommand := r.keyBindingManager.GetCommandByKey(int(internalC.GetLastKeyPressed())); mainCommand != nil {
+		if internalC, err := r.prepareExecutionList(internalC); err != nil {
+			internalC.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
+		}
+		mainCommand.GetExecFunc()(internalC)
+	}
 }
 
 func (r CommandExecutor) prepareExecutionList(internalC dto.InternalContextIface) (dto.InternalContextIface, error) {
 	var executionList []dto.CommandIface
 
-	pattrensArr, argsArr := splitToArray(string(internalC.GetCurrentInputBuffer()))
+	pattrensArr, argsArr := splitToArrays(string(internalC.GetCurrentInputBuffer()))
 	crsr := r.commandRouter.SearchCommands(pattrensArr...)
 	for counter, pattern := range pattrensArr {
 		cmsr := crsr.GetDataByPattern(pattern)
@@ -65,7 +69,7 @@ type keyBindingsIface interface {
 
 // git clone http://ya.ru | grep ok | >> out.txt
 // Parse this to 3 cmd list without trailing " " space and put args for cmd in args
-func splitToArray(s string) (res []dto.PatternIface, args []string) {
+func splitToArrays(s string) (res []dto.PatternIface, args []string) {
 	for _, v := range strings.Split(s, "|") {
 		v = strings.TrimSpace(v)
 		if len(v) == 0 {

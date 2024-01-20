@@ -1,7 +1,6 @@
 package integrated
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -173,7 +172,7 @@ func Test_getStepValue(t *testing.T) {
 }
 
 func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
-	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+	f := func(internalC dto.InternalContextIface) {
 		panic("exit")
 	}
 	c1 := commands.NewCommand("exit", f)
@@ -251,7 +250,7 @@ func TestIntergatedManager_searchPatternInCommands(t *testing.T) {
 }
 
 func TestIntergatedManager_SearchCommands(t *testing.T) {
-	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+	f := func(internalC dto.InternalContextIface) {
 		panic("exit")
 	}
 	c1 := commands.NewCommand("exit", f)
@@ -269,9 +268,10 @@ func TestIntergatedManager_SearchCommands(t *testing.T) {
 }
 
 func TestIntergatedManager_precisionSearchInCommands(t *testing.T) {
-	f := func(ctx context.Context, internalContext dto.InternalContextIface, inputChan chan []byte, outputChan chan []byte) {
+	f := func(internalC dto.InternalContextIface) {
 		panic("exit")
 	}
+
 	c1 := commands.NewCommand("exit", f)
 	c2 := commands.NewCommand("dobus", f)
 	c3 := commands.NewCommand("gettalk", f)

@@ -7,8 +7,8 @@ import (
 	"ash/internal/dto"
 )
 
-func NewExitCommand() *commands.Command {
-	return commands.NewCommand("exit",
+func NewExecuteCommand() *commands.Command {
+	return commands.NewCommand(":Execute",
 		func(internalC dto.InternalContextIface) {
 			internalC.GetErrChan() <- errors.New("ash exiting")
 		})
