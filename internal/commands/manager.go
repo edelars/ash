@@ -1,15 +1,14 @@
-package integrated
+package commands
 
 import (
-	"ash/internal/commands/managers/integrated/list"
 	"ash/internal/dto"
 )
 
-type IntergatedManager struct {
+type commandManager struct {
 	data []dto.CommandIface
 }
 
-func (m IntergatedManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+func (m commandManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	founded := make(map[dto.CommandIface]int8)
 	for _, pattern := range patterns {
 		if pattern.IsPrecisionSearch() {
@@ -30,9 +29,9 @@ func (m IntergatedManager) SearchCommands(resultChan chan dto.CommandManagerSear
 	}
 }
 
-func NewIntegratedManager() (im IntergatedManager) {
-	im.data = append(im.data, list.NewExitCommand(), list.NewExecuteCommand())
-	return im
+func NewCommandManager(cmds ...dto.CommandIface) (cm commandManager) {
+	cm.data = append(cm.data, cmds...)
+	return cm
 }
 
 type foundedData map[dto.CommandIface]int8
@@ -44,7 +43,7 @@ type foundedData map[dto.CommandIface]int8
 // cd - cd = 100%
 // cd - vv = 0%
 // cd - cc = 50%
-func (m IntergatedManager) searchPatternInCommands(searchPattern string, founded foundedData) foundedData {
+func (m commandManager) searchPatternInCommands(searchPattern string, founded foundedData) foundedData {
 	for _, cmd := range m.data {
 		percentCorrect := int8(100)
 		step := getStepValue(cmd.GetName())
@@ -74,7 +73,7 @@ func getStepValue(s string) int8 {
 	return int8(100 / runeCount)
 }
 
-func (m IntergatedManager) precisionSearchInCommands(searchName string, founded foundedData) foundedData {
+func (m commandManager) precisionSearchInCommands(searchName string, founded foundedData) foundedData {
 	for _, cmd := range m.data {
 		if cmd.GetName() == searchName {
 			founded[cmd] = 100

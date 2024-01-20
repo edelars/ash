@@ -37,3 +37,7 @@ func (c *Command) WithArgs(args string) dto.CommandIface {
 	res.args = args
 	return &res
 }
+
+func (c *Command) GetArgs() string {
+	return c.args
+}

@@ -14,19 +14,19 @@ var (
 	errCmdNotFounds     = errors.New("Command not found")
 )
 
-type CommandExecutor struct {
+type commandExecutor struct {
 	commandRouter     routerIface
 	keyBindingManager keyBindingsIface
 }
 
-func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindingsIface) CommandExecutor {
-	return CommandExecutor{
+func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindingsIface) commandExecutor {
+	return commandExecutor{
 		commandRouter:     commandRouter,
 		keyBindingManager: keyBindingManager,
 	}
 }
 
-func (r CommandExecutor) Execute(internalC dto.InternalContextIface) {
+func (r commandExecutor) Execute(internalC dto.InternalContextIface) {
 	if mainCommand := r.keyBindingManager.GetCommandByKey(int(internalC.GetLastKeyPressed())); mainCommand != nil {
 		if internalC, err := r.prepareExecutionList(internalC); err != nil {
 			internalC.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
@@ -35,7 +35,7 @@ func (r CommandExecutor) Execute(internalC dto.InternalContextIface) {
 	}
 }
 
-func (r CommandExecutor) prepareExecutionList(internalC dto.InternalContextIface) (dto.InternalContextIface, error) {
+func (r commandExecutor) prepareExecutionList(internalC dto.InternalContextIface) (dto.InternalContextIface, error) {
 	var executionList []dto.CommandIface
 
 	pattrensArr, argsArr := splitToArrays(string(internalC.GetCurrentInputBuffer()))

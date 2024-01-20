@@ -20,6 +20,7 @@ type CommandIface interface {
 	GetExecFunc() ExecF
 	GetName() string
 	WithArgs(args string) CommandIface
+	GetArgs() string
 }
 
 type ExecF func(internalC InternalContextIface)

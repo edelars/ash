@@ -72,6 +72,10 @@ func (commandimpl CommandImpl) WithArgs(args string) dto.CommandIface {
 	panic("not implemented")
 }
 
+func (commandimpl CommandImpl) GetArgs() string {
+	panic("not implemented")
+}
+
 type CommandManagerImpl struct{}
 
 func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {

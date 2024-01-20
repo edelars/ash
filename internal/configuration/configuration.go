@@ -1,7 +1,6 @@
 package configuration
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -48,7 +47,6 @@ func NewConfigLoader() ConfigLoader {
 	if err != nil {
 		return newConfigLoaderWithDefaults()
 	}
-	fmt.Println(config)
 	return config
 }
 

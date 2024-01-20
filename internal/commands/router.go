@@ -6,18 +6,18 @@ import (
 	"ash/internal/dto"
 )
 
-// 1. Internal commands
+// 1. Internal actions (for key binds and manual startup)
 // 2. Filesystems commands i.e. exec /usr/sbin/fdisk
 // 3. Internal POSIX commands like 'cd'
-type CommandRouter struct {
+type commandRouter struct {
 	commandManagers []CommandManagerIface
 }
 
-func (r *CommandRouter) AddNewCommandManager(newCommandManager CommandManagerIface) {
+func (r *commandRouter) AddNewCommandManager(newCommandManager CommandManagerIface) {
 	r.commandManagers = append(r.commandManagers, newCommandManager)
 }
 
-func (r *CommandRouter) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	var wg sync.WaitGroup
 	res := NewCommandRouterSearchResult()
 
@@ -26,9 +26,6 @@ func (r *CommandRouter) SearchCommands(patterns ...dto.PatternIface) dto.Command
 
 	go func() {
 		for r := range resultChan {
-			// if _, ok := res[r.GetSourceName()]; ok {
-			// } else {
-			// }
 			res.AddResult(r)
 			wg.Done()
 		}
@@ -44,12 +41,12 @@ func (r *CommandRouter) SearchCommands(patterns ...dto.PatternIface) dto.Command
 	return &res
 }
 
-func (r *CommandRouter) getCommandManagerCount() int {
+func (r *commandRouter) getCommandManagerCount() int {
 	return len(r.commandManagers)
 }
 
-func NewCommandRouter(commandManagers ...CommandManagerIface) CommandRouter {
-	c := CommandRouter{
+func NewCommandRouter(commandManagers ...CommandManagerIface) commandRouter {
+	c := commandRouter{
 		commandManagers: make([]CommandManagerIface, len(commandManagers)),
 	}
 

@@ -10,7 +10,8 @@ import (
 
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
-	"ash/internal/commands/managers/integrated"
+	integrated "ash/internal/commands/managers/integrated_commands"
+	"ash/internal/commands/managers/internal_actions"
 	"ash/internal/configuration"
 	"ash/internal/dto"
 	"ash/internal/executor"
@@ -45,7 +46,8 @@ func main() {
 	cfg := configuration.NewConfigLoader()
 
 	intergratedManager := integrated.NewIntegratedManager()
-	commandRouter := commands.NewCommandRouter(intergratedManager)
+	actionManager := internal_actions.NewInternalAcgionsManager()
+	commandRouter := commands.NewCommandRouter(intergratedManager, actionManager)
 
 	internalContext := internal_context.NewInternalContext(ctx, inputChan, outputChan, errs)
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)

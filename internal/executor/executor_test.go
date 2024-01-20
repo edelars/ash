@@ -140,7 +140,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := CommandExecutor{
+			r := commandExecutor{
 				commandRouter:     tt.fields.commandRouter,
 				keyBindingManager: tt.fields.keyBindingManager,
 			}
