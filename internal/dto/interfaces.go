@@ -19,6 +19,7 @@ type CommandIface interface {
 	SetMathWeight(weight int8)
 	GetExecFunc() ExecF
 	GetName() string
+	WithArgs(args string) CommandIface
 }
 
 type ExecF func(ctx context.Context, internalContext InternalContextIface, inputChan chan []byte, outputChan chan []byte)
@@ -40,4 +41,6 @@ type InternalContextIface interface {
 	GetInputChan() chan byte
 	GetOutputChan() chan byte
 	GetErrChan() chan error
+	WithExecutionList(executionList []CommandIface) InternalContextIface
+	GetExecutionList() []CommandIface
 }

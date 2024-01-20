@@ -13,6 +13,7 @@ type InternalContext struct {
 	currentKeyPressed  byte
 	ctx                context.Context
 	currentInputBuffer []byte
+	executionList      []dto.CommandIface
 }
 
 func NewInternalContext(ctx context.Context, inputChan chan byte, outputChan chan byte, errs chan error) InternalContext {
@@ -68,4 +69,13 @@ func (i InternalContext) GetErrChan() chan error {
 
 func (i InternalContext) GetLastKeyPressed() byte {
 	return i.currentKeyPressed
+}
+
+func (i InternalContext) WithExecutionList(executionList []dto.CommandIface) dto.InternalContextIface {
+	i.executionList = executionList
+	return i
+}
+
+func (i InternalContext) GetExecutionList() []dto.CommandIface {
+	return i.executionList
 }

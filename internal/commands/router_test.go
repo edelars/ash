@@ -68,6 +68,10 @@ func (commandimpl CommandImpl) GetMathWeight() int8 {
 	return commandimpl.W
 }
 
+func (commandimpl CommandImpl) WithArgs(args string) dto.CommandIface {
+	panic("not implemented")
+}
+
 type CommandManagerImpl struct{}
 
 func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {

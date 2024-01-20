@@ -13,6 +13,7 @@ type Command struct {
 	weight   int8
 	execFunc dto.ExecF
 	name     string
+	args     string
 }
 
 func (c *Command) GetMathWeight() int8 {
@@ -29,4 +30,10 @@ func (c *Command) GetExecFunc() dto.ExecF {
 
 func (c *Command) GetName() string {
 	return c.name
+}
+
+func (c *Command) WithArgs(args string) dto.CommandIface {
+	res := *c
+	res.args = args
+	return &res
 }
