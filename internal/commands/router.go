@@ -20,13 +20,14 @@ func (r *commandRouter) AddNewCommandManager(newCommandManager CommandManagerIfa
 func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	var wg sync.WaitGroup
 	res := NewCommandRouterSearchResult()
-
 	resultChan := make(chan dto.CommandManagerSearchResult, r.getCommandManagerCount())
 	defer close(resultChan)
 
 	go func() {
 		for r := range resultChan {
-			res.AddResult(r)
+			if r.Founded() != 0 {
+				res.AddResult(r)
+			}
 			wg.Done()
 		}
 	}()
@@ -37,7 +38,6 @@ func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.Command
 	}
 
 	wg.Wait()
-
 	return &res
 }
 

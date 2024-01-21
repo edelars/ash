@@ -48,6 +48,10 @@ func (managersearchresult ManagerSearchResultImpl) GetPattern() dto.PatternIface
 	return managersearchresult.Pattern
 }
 
+func (managersearchresult ManagerSearchResultImpl) Founded() int {
+	return len(managersearchresult.Commands)
+}
+
 type CommandImpl struct {
 	W int8
 }
@@ -87,14 +91,26 @@ func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.
 	}
 }
 
+type CommandManagerImpl2 struct{}
+
+func (commandmanagerimpl CommandManagerImpl2) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+	resultChan <- ManagerSearchResultImpl{
+		Source:   "3",
+		Commands: []dto.CommandIface{},
+		Pattern:  patterns[0],
+	}
+}
+
 func TestCommandRouter_SearchCommands(t *testing.T) {
-	cm := CommandManagerImpl{}
-	cr := commands.NewCommandRouter(cm)
+	cr := commands.NewCommandRouter(CommandManagerImpl{}, CommandManagerImpl2{})
 	p1 := commands.NewPattern("123", false)
 
 	r := cr.SearchCommands(p1)
 	cc := r.GetDataByPattern(p1)
 
+	for _, v := range cc {
+		assert.Equal(t, 1, v.Founded())
+	}
 	assert.Equal(t, 1, len(cc))
 	assert.Equal(t, p1, cc[0].GetPattern())
 	assert.Equal(t, "2", cc[0].GetSourceName())

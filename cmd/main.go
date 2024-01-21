@@ -13,6 +13,7 @@ import (
 	integrated "ash/internal/commands/managers/integrated_commands"
 	"ash/internal/commands/managers/internal_actions"
 	"ash/internal/configuration"
+	"ash/internal/configuration/envs_loader"
 	"ash/internal/dto"
 	"ash/internal/executor"
 	"ash/internal/internal_context"
@@ -45,6 +46,9 @@ func main() {
 
 	cfg := configuration.NewConfigLoader()
 
+	// load ENVs at start
+	envs_loader.LoadEnvs(cfg)
+
 	intergratedManager := integrated.NewIntegratedManager()
 	actionManager := internal_actions.NewInternalAcgionsManager()
 	commandRouter := commands.NewCommandRouter(intergratedManager, actionManager)
@@ -54,20 +58,27 @@ func main() {
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
 
-	go processingInput(promptGenerator, &internalContext, exec)
+	stopedChan := make(chan struct{})
+	defer close(stopedChan)
+	go processingInput(promptGenerator, &internalContext, exec, cfg, stopedChan)
 
 	<-errs
-	fmt.Println("ash exit")
+	cancelFunc()
+	<-stopedChan
 }
 
-func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Executor) {
+func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader, stopedChan chan struct{}) {
 	var currentBytes []byte
 	ctx := internalC.GetCTX()
 	outputChan := internalC.GetOutputChan()
 	inputChan := internalC.GetInputChan()
 
-	prompt.GetPrompt(outputChan)
+	promptChan := make(chan struct{}, 1)
+	defer close(promptChan)
 
+	promptChan <- struct{}{}
+
+mainLoop:
 	for {
 		select {
 		case i := <-inputChan:
@@ -75,14 +86,24 @@ func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Exe
 				currentBytes = append(currentBytes, i)
 				outputChan <- i
 			} else {
+				if int(i) == cfg.GetKeyBind(":Backspace") {
+					for _, v := range "\b\033[K" {
+						outputChan <- byte(v)
+					}
+					currentBytes = currentBytes[:len(currentBytes)-1] // delete last input in buffer
+					continue
+				}
 				exec.Execute(internalC.WithLastKeyPressed(i).WithCurrentInputBuffer(currentBytes))
 				currentBytes = nil
-				prompt.GetPrompt(outputChan)
+				promptChan <- struct{}{}
 			}
+		case <-promptChan:
+			prompt.GetPrompt(outputChan)
 		case <-ctx.Done():
-			break
+			break mainLoop
 		}
 	}
+	stopedChan <- struct{}{}
 }
 
 type Prompt interface {
@@ -112,16 +133,12 @@ func writeOutput(ctx context.Context, outputChan chan byte) {
 		case <-ctx.Done():
 			break
 		case b := <-outputChan:
-			print(string(b))
+			print(b)
 		}
 	}
 }
 
-// Change the directory and return the error.
-// return os.Chdir(args[1])
-
 func waitInterruptSignal(errs chan<- error) {
-	fmt.Println("exit now")
 	c := make(chan os.Signal, 3)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	errs <- fmt.Errorf("%s", <-c)

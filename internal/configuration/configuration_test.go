@@ -50,7 +50,7 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 		{
 			name: "defaults",
 			want: ConfigLoader{
-				Keybindings: []KeyBind{{13, ":Execute"}, {14, ":Autocomplete"}},
+				Keybindings: []KeyBind{{13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
 				Aliases:     []Alias{},
 				Prompt:      "ASH> ",
 			},
@@ -113,6 +113,91 @@ func TestConfigLoader_GetKeysBindings(t *testing.T) {
 				t.Error(cap(c.GetKeysBindings()))
 				t.Error(cap(tt.want))
 
+			}
+		})
+	}
+}
+
+func TestConfigLoader_GetKeyBind(t *testing.T) {
+	type fields struct {
+		Keybindings []KeyBind
+		Aliases     []Alias
+		Prompt      string
+	}
+	type args struct {
+		action string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   int
+	}{
+		{
+			name: "0",
+			fields: fields{
+				Keybindings: []KeyBind{{1, "asd"}},
+			},
+			args: args{
+				action: "xcvb",
+			},
+			want: 0,
+		},
+		{
+			name: "1",
+			fields: fields{
+				Keybindings: []KeyBind{{1, "asd"}},
+			},
+			args: args{
+				action: "asd",
+			},
+			want: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := ConfigLoader{
+				Keybindings: tt.fields.Keybindings,
+				Aliases:     tt.fields.Aliases,
+				Prompt:      tt.fields.Prompt,
+			}
+			if got := c.GetKeyBind(tt.args.action); got != tt.want {
+				t.Errorf("ConfigLoader.GetKeyBind() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfigLoader_GetEnvs(t *testing.T) {
+	type fields struct {
+		Keybindings []KeyBind
+		Aliases     []Alias
+		Prompt      string
+		Envs        []string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []string
+	}{
+		{
+			name: "1",
+			fields: fields{
+				Envs: []string{"ad"},
+			},
+			want: []string{"ad"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := ConfigLoader{
+				Keybindings: tt.fields.Keybindings,
+				Aliases:     tt.fields.Aliases,
+				Prompt:      tt.fields.Prompt,
+				Envs:        tt.fields.Envs,
+			}
+			if got := c.GetEnvs(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ConfigLoader.GetEnvs() = %v, want %v", got, tt.want)
 			}
 		})
 	}

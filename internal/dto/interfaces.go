@@ -12,6 +12,7 @@ type CommandManagerSearchResult interface {
 	GetSourceName() string
 	GetCommands() []CommandIface
 	GetPattern() PatternIface
+	Founded() int
 }
 
 type CommandIface interface {

@@ -12,7 +12,7 @@ func NewEchoCommand() *commands.Command {
 		func(internalC dto.InternalContextIface) {
 			el := internalC.GetExecutionList()
 			if len(el) == 1 {
-				os.Chdir(el[0].GetArgs())
+				internalC.GetPrintFunction()(os.Getenv(el[0].GetArgs()))
 			}
 		})
 }

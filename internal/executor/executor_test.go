@@ -87,6 +87,8 @@ func Test_splitToArray(t *testing.T) {
 
 func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 	cr := commRouterImpl{}
+	cr2 := commRouterImpl2{}
+	cr3 := commRouterImpl3{}
 	type fields struct {
 		commandRouter     routerIface
 		keyBindingManager keyBindingsIface
@@ -137,6 +139,28 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil).WithArgs("asd"), commands.NewCommand("put", nil).WithArgs("456")}),
 			wantErr: false,
 		},
+		{
+			name: "error 0",
+			fields: fields{
+				commandRouter: cr2,
+			},
+			args: args{
+				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]byte("get asd | put 456")),
+			},
+			want:    internal_context.InternalContext{},
+			wantErr: true,
+		},
+		{
+			name: "error 2",
+			fields: fields{
+				commandRouter: cr3,
+			},
+			args: args{
+				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]byte("get asd")),
+			},
+			want:    internal_context.InternalContext{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -171,7 +195,31 @@ func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.Command
 		commandsData: []dto.CommandIface{commands.NewCommand("put", nil)},
 		patternValue: commands.NewPattern("put", true),
 	})
+	return &res
+}
 
+type commRouterImpl2 struct{}
+
+func (r commRouterImpl2) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+	res := commands.NewCommandRouterSearchResult()
+	return &res
+}
+
+type commRouterImpl3 struct{}
+
+func (r commRouterImpl3) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+	res := commands.NewCommandRouterSearchResult()
+
+	res.AddResult(&searchResult{
+		name:         "get",
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		patternValue: commands.NewPattern("get", true),
+	})
+	res.AddResult(&searchResult{
+		name:         "get",
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		patternValue: commands.NewPattern("get", true),
+	})
 	return &res
 }
 
@@ -193,6 +241,10 @@ func (searchresult *searchResult) GetPattern() dto.PatternIface {
 	return searchresult.patternValue
 }
 
+func (searchresult *searchResult) Founded() int {
+	return len(searchresult.commandsData)
+}
+
 func TestCommandExecutor_Execute(t *testing.T) {
 	cr := commRouterImpl{}
 	kb := keyBinderImpl{}
@@ -200,6 +252,7 @@ func TestCommandExecutor_Execute(t *testing.T) {
 	ic := internal_context.NewInternalContext(context.Background(), nil, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]byte("get"))
 	ce.Execute(ic)
 	assert.Equal(t, true, kb.Success)
+	assert.Equal(t, 0, len(ic.GetExecutionList()))
 }
 
 type keyBinderImpl struct {

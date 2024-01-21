@@ -341,3 +341,47 @@ func Test_searchResult_GetCommands(t *testing.T) {
 		})
 	}
 }
+
+func Test_searchResult_Founded(t *testing.T) {
+	type fields struct {
+		name         string
+		commandsData []dto.CommandIface
+		patternValue dto.PatternIface
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   int
+	}{
+		{
+			name: "1",
+			fields: fields{
+				name:         "1",
+				commandsData: []dto.CommandIface{NewCommand("asd", nil)},
+				patternValue: nil,
+			},
+			want: 1,
+		},
+		{
+			name: "0",
+			fields: fields{
+				name:         "0",
+				commandsData: []dto.CommandIface{},
+				patternValue: nil,
+			},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			searchresult := &searchResult{
+				name:         tt.fields.name,
+				commandsData: tt.fields.commandsData,
+				patternValue: tt.fields.patternValue,
+			}
+			if got := searchresult.Founded(); got != tt.want {
+				t.Errorf("searchResult.Founded() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

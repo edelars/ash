@@ -28,10 +28,13 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 
 func (r commandExecutor) Execute(internalC dto.InternalContextIface) {
 	if mainCommand := r.keyBindingManager.GetCommandByKey(int(internalC.GetLastKeyPressed())); mainCommand != nil {
-		if internalC, err := r.prepareExecutionList(internalC); err != nil {
+		var err error
+		if internalC, err = r.prepareExecutionList(internalC); err != nil {
 			internalC.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
 		}
 		mainCommand.GetExecFunc()(internalC)
+	} else {
+		internalC.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", internalC.GetLastKeyPressed()))
 	}
 }
 
@@ -46,13 +49,13 @@ func (r commandExecutor) prepareExecutionList(internalC dto.InternalContextIface
 		case 1:
 			commands := cmsr[0].GetCommands()
 			if len(commands) != 1 {
-				return nil, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+				return internalC, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
 			}
 			executionList = append(executionList, commands[0].WithArgs(argsArr[counter]))
 		case 0:
-			return nil, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
+			return internalC, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
 		default:
-			return nil, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+			return internalC, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
 		}
 	}
 

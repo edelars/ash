@@ -1,8 +1,6 @@
 package list
 
 import (
-	"errors"
-
 	"ash/internal/commands"
 	"ash/internal/dto"
 )
@@ -10,6 +8,9 @@ import (
 func NewExecuteCommand() *commands.Command {
 	return commands.NewCommand(":Execute",
 		func(internalC dto.InternalContextIface) {
-			internalC.GetErrChan() <- errors.New("ash exiting")
+			for _, cmd := range internalC.GetExecutionList() {
+				cmd.GetExecFunc()(internalC)
+				return // TODO
+			}
 		})
 }

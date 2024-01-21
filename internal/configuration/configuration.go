@@ -17,6 +17,7 @@ type ConfigLoader struct {
 	Keybindings []KeyBind `yaml:"keybindings"`
 	Aliases     []Alias   `yaml:"aliases"`
 	Prompt      string    `yaml:"prompt"`
+	Envs        []string  `yaml:"envs"`
 }
 
 type KeyBind struct {
@@ -27,6 +28,15 @@ type KeyBind struct {
 type Alias struct {
 	Short string `yaml:"short"`
 	Full  string `yaml:"full"`
+}
+
+func (c ConfigLoader) GetKeyBind(action string) int {
+	for _, v := range c.Keybindings {
+		if v.Action == action {
+			return v.Key
+		}
+	}
+	return 0
 }
 
 func NewConfigLoader() ConfigLoader {
@@ -52,7 +62,7 @@ func NewConfigLoader() ConfigLoader {
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
-		Keybindings: []KeyBind{{13, ":Execute"}, {14, ":Autocomplete"}},
+		Keybindings: []KeyBind{{13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
 		Aliases:     []Alias{},
 		Prompt:      "ASH> ",
 	}
@@ -83,4 +93,8 @@ func (c ConfigLoader) GetKeysBindings() []struct {
 		}{kb.Key, kb.Action})
 	}
 	return res
+}
+
+func (c ConfigLoader) GetEnvs() []string {
+	return c.Envs
 }

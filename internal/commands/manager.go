@@ -99,3 +99,7 @@ func (searchresult *searchResult) GetCommands() []dto.CommandIface {
 func (searchresult *searchResult) GetPattern() dto.PatternIface {
 	return searchresult.patternValue
 }
+
+func (searchresult *searchResult) Founded() int {
+	return len(searchresult.commandsData)
+}

@@ -89,6 +89,10 @@ func (searchresult *searchResult) GetPattern() dto.PatternIface {
 	return searchresult.patternValue
 }
 
+func (searchresult *searchResult) Founded() int {
+	return len(searchresult.commandsData)
+}
+
 func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 	type fields struct {
 		bindings map[int]dto.CommandIface
