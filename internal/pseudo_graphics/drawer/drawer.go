@@ -48,7 +48,10 @@ mainloop:
 			}
 		case termbox.EventError:
 			return ev.Err
+		case termbox.EventResize:
+			d.redrawAll(sw)
 		}
+
 		d.redrawAll(sw)
 	}
 

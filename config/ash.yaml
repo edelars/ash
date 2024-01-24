@@ -7,6 +7,9 @@ keybindings:
     action: ':Exit'
   - key: 127
     action: ':Backspace'
+  - key: 167
+    action: ':Close'
+
 aliases:
   - short: lg
     full: lazygit

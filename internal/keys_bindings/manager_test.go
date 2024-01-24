@@ -24,11 +24,11 @@ func TestNewKeyBindingsManager(t *testing.T) {
 type confLoaderImpl struct{}
 
 func (c confLoaderImpl) GetKeysBindings() []struct {
-	Key    int
+	Key    uint16
 	Action string
 } {
 	res := []struct {
-		Key    int
+		Key    uint16
 		Action string
 	}{
 		{
@@ -95,10 +95,10 @@ func (searchresult *searchResult) Founded() int {
 
 func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 	type fields struct {
-		bindings map[int]dto.CommandIface
+		bindings map[uint16]dto.CommandIface
 	}
 	type args struct {
-		key int
+		key uint16
 	}
 	tests := []struct {
 		name   string
@@ -109,7 +109,7 @@ func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				bindings: map[int]dto.CommandIface{13: commands.NewCommand("12", nil), 22: nil},
+				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil), 22: nil},
 			},
 			args: args{
 				key: 13,
@@ -119,7 +119,7 @@ func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 		{
 			name: "nil",
 			fields: fields{
-				bindings: map[int]dto.CommandIface{13: commands.NewCommand("12", nil)},
+				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil)},
 			},
 			args: args{
 				key: 113,
@@ -129,7 +129,7 @@ func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 		{
 			name: "nil 2",
 			fields: fields{
-				bindings: map[int]dto.CommandIface{},
+				bindings: map[uint16]dto.CommandIface{},
 			},
 			args: args{
 				key: 13,

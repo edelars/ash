@@ -259,7 +259,7 @@ type keyBinderImpl struct {
 	Success bool
 }
 
-func (kb *keyBinderImpl) GetCommandByKey(key int) dto.CommandIface {
+func (kb *keyBinderImpl) GetCommandByKey(key uint16) dto.CommandIface {
 	if key == 13 {
 		return commands.NewCommand("get", func(_ dto.InternalContextIface) {
 			kb.Success = true

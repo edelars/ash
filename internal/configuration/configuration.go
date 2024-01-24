@@ -21,7 +21,7 @@ type ConfigLoader struct {
 }
 
 type KeyBind struct {
-	Key    int    `yaml:"key"`
+	Key    uint16 `yaml:"key"`
 	Action string `yaml:"action"`
 }
 
@@ -30,7 +30,7 @@ type Alias struct {
 	Full  string `yaml:"full"`
 }
 
-func (c ConfigLoader) GetKeyBind(action string) int {
+func (c ConfigLoader) GetKeyBind(action string) uint16 {
 	for _, v := range c.Keybindings {
 		if v.Action == action {
 			return v.Key
@@ -62,7 +62,7 @@ func NewConfigLoader() ConfigLoader {
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
-		Keybindings: []KeyBind{{13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
+		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
 		Aliases:     []Alias{},
 		Prompt:      "ASH> ",
 	}
@@ -78,17 +78,17 @@ func getConfigFilename(startupFilename string, defaultConfigDir string) string {
 }
 
 func (c ConfigLoader) GetKeysBindings() []struct {
-	Key    int
+	Key    uint16
 	Action string
 } {
 	var res []struct {
-		Key    int
+		Key    uint16
 		Action string
 	}
 
 	for _, kb := range c.Keybindings {
 		res = append(res, struct {
-			Key    int
+			Key    uint16
 			Action string
 		}{kb.Key, kb.Action})
 	}

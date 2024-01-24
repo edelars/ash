@@ -16,10 +16,11 @@ import (
 	"ash/internal/configuration/envs_loader"
 	"ash/internal/dto"
 	"ash/internal/executor"
+	"ash/internal/input_manager"
 	"ash/internal/internal_context"
 	"ash/internal/keys_bindings"
 
-	"golang.org/x/term"
+	"github.com/nsf/termbox-go"
 )
 
 func main() {
@@ -28,21 +29,20 @@ func main() {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	// switch stdin into 'raw' mode
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
-	inputChan := make(chan byte)
 	outputChan := make(chan byte)
-	defer close(inputChan)
 	defer close(outputChan)
 
-	go readInput(ctx, inputChan)
 	go writeOutput(ctx, outputChan)
+
+	inputManager := input_manager.NewInputManager()
+	if err := inputManager.Init(); err != nil {
+		fmt.Println(err)
+	}
+
+	go func() {
+		errs <- inputManager.Start(ctx)
+	}()
 
 	cfg := configuration.NewConfigLoader()
 
@@ -53,7 +53,7 @@ func main() {
 	actionManager := internal_actions.NewInternalAcgionsManager()
 	commandRouter := commands.NewCommandRouter(intergratedManager, actionManager)
 
-	internalContext := internal_context.NewInternalContext(ctx, inputChan, outputChan, errs)
+	internalContext := internal_context.NewInternalContext(ctx, &inputManager, outputChan, errs)
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
@@ -73,7 +73,7 @@ func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Exe
 	var currentBytes []byte
 	ctx := internalC.GetCTX()
 	outputChan := internalC.GetOutputChan()
-	inputChan := internalC.GetInputChan()
+	inputEventChan := internalC.GetInputEventChan()
 
 	promptChan := make(chan struct{}, 1)
 	defer close(promptChan)
@@ -83,21 +83,27 @@ func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Exe
 mainLoop:
 	for {
 		select {
-		case i := <-inputChan:
-			if unicode.IsPrint(rune(i)) {
-				currentBytes = append(currentBytes, i)
-				outputChan <- i
-			} else {
-				if int(i) == cfg.GetKeyBind(":Backspace") {
+		case ev := <-inputEventChan:
+			switch ev.Type {
+			case termbox.EventKey:
+				switch ev.Key {
+				case termbox.Key(cfg.GetKeyBind(":Backspace")):
 					for _, v := range "\b\033[K" {
 						outputChan <- byte(v)
 					}
 					currentBytes = currentBytes[:len(currentBytes)-1] // delete last input in buffer
 					continue
+				default:
+					if ev.Ch != 0 && unicode.IsPrint(rune(ev.Ch)) {
+						currentBytes = append(currentBytes, byte(ev.Ch))
+						outputChan <- byte(ev.Ch)
+
+					} else {
+						exec.Execute(internalC.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(currentBytes))
+						currentBytes = nil
+						promptChan <- struct{}{}
+					}
 				}
-				exec.Execute(internalC.WithLastKeyPressed(i).WithCurrentInputBuffer(currentBytes))
-				currentBytes = nil
-				promptChan <- struct{}{}
 			}
 		case <-promptChan:
 			prompt.GetPrompt(outputChan)
@@ -114,19 +120,6 @@ type Prompt interface {
 
 type Executor interface {
 	Execute(internalC dto.InternalContextIface)
-}
-
-func readInput(ctx context.Context, inputChan chan byte) {
-	for {
-		if e := ctx.Err(); e != nil {
-			break
-		}
-		// Read the keyboad input.
-		var inputArr []byte = make([]byte, 1)
-		os.Stdin.Read(inputArr)
-		// fmt.Printf("got new: %s\n", string(inputArr))
-		inputChan <- inputArr[0]
-	}
 }
 
 func writeOutput(ctx context.Context, outputChan chan byte) {

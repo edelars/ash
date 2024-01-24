@@ -2,6 +2,8 @@ package dto
 
 import (
 	"context"
+
+	"github.com/nsf/termbox-go"
 )
 
 type CommandRouterSearchResult interface {
@@ -40,7 +42,7 @@ type InternalContextIface interface {
 	GetCurrentInputBuffer() []byte
 	GetLastKeyPressed() byte
 	GetCTX() context.Context
-	GetInputChan() chan byte
+	GetInputEventChan() chan termbox.Event
 	GetOutputChan() chan byte
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface

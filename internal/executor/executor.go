@@ -27,7 +27,7 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 }
 
 func (r commandExecutor) Execute(internalC dto.InternalContextIface) {
-	if mainCommand := r.keyBindingManager.GetCommandByKey(int(internalC.GetLastKeyPressed())); mainCommand != nil {
+	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(internalC.GetLastKeyPressed())); mainCommand != nil {
 		var err error
 		if internalC, err = r.prepareExecutionList(internalC); err != nil {
 			internalC.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
@@ -67,7 +67,7 @@ type routerIface interface {
 }
 
 type keyBindingsIface interface {
-	GetCommandByKey(key int) dto.CommandIface
+	GetCommandByKey(key uint16) dto.CommandIface
 }
 
 // git clone http://ya.ru | grep ok | >> out.txt

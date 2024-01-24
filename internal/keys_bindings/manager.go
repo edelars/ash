@@ -6,15 +6,15 @@ import (
 )
 
 type KeyBindingsManager struct {
-	bindings map[int]dto.CommandIface
+	bindings map[uint16]dto.CommandIface
 }
 
 func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter commandRouterIface) KeyBindingsManager {
-	kb := KeyBindingsManager{bindings: make(map[int]dto.CommandIface)}
+	kb := KeyBindingsManager{bindings: make(map[uint16]dto.CommandIface)}
 
 	var patterns []dto.PatternIface
 
-	m := make(map[string]int)
+	m := make(map[string]uint16)
 
 	for _, kb := range configLoader.GetKeysBindings() {
 		patterns = append(patterns, commands.NewPattern(kb.Action, true))
@@ -38,7 +38,7 @@ func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter command
 type (
 	configLoaderIface interface {
 		GetKeysBindings() []struct {
-			Key    int
+			Key    uint16
 			Action string
 		}
 	}
@@ -47,6 +47,6 @@ type (
 	}
 )
 
-func (k KeyBindingsManager) GetCommandByKey(key int) dto.CommandIface {
+func (k KeyBindingsManager) GetCommandByKey(key uint16) dto.CommandIface {
 	return k.bindings[key]
 }

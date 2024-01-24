@@ -50,7 +50,7 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 		{
 			name: "defaults",
 			want: ConfigLoader{
-				Keybindings: []KeyBind{{13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
+				Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
 				Aliases:     []Alias{},
 				Prompt:      "ASH> ",
 			},
@@ -75,7 +75,7 @@ func TestConfigLoader_GetKeysBindings(t *testing.T) {
 		name   string
 		fields fields
 		want   []struct {
-			Key    int
+			Key    uint16
 			Action string
 		}
 	}{
@@ -96,7 +96,7 @@ func TestConfigLoader_GetKeysBindings(t *testing.T) {
 				Prompt:      "",
 			},
 			want: []struct {
-				Key    int
+				Key    uint16
 				Action string
 			}{{13, "enter"}, {11, "done"}},
 		},
@@ -131,7 +131,7 @@ func TestConfigLoader_GetKeyBind(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   int
+		want   uint16
 	}{
 		{
 			name: "0",

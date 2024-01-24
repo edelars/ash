@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"ash/internal/dto"
+
+	"github.com/nsf/termbox-go"
 )
 
 type InternalContext struct {
-	inputChan          chan byte
+	im                 inputManager
 	outputChan         chan byte
 	errs               chan error
 	currentKeyPressed  byte
@@ -15,11 +17,14 @@ type InternalContext struct {
 	currentInputBuffer []byte
 	executionList      []dto.CommandIface
 }
+type inputManager interface {
+	GetInputEventChan() chan termbox.Event
+}
 
-func NewInternalContext(ctx context.Context, inputChan chan byte, outputChan chan byte, errs chan error) InternalContext {
+func NewInternalContext(ctx context.Context, im inputManager, outputChan chan byte, errs chan error) InternalContext {
 	return InternalContext{
 		ctx:        ctx,
-		inputChan:  inputChan,
+		im:         im,
 		outputChan: outputChan,
 		errs:       errs,
 	}
@@ -55,10 +60,6 @@ func (i InternalContext) GetCTX() context.Context {
 	return i.ctx
 }
 
-func (i InternalContext) GetInputChan() chan byte {
-	return i.inputChan
-}
-
 func (i InternalContext) GetOutputChan() chan byte {
 	return i.outputChan
 }
@@ -87,4 +88,8 @@ func (i InternalContext) GetPrintFunction() func(msg string) {
 			i.GetOutputChan() <- b
 		}
 	}
+}
+
+func (i InternalContext) GetInputEventChan() chan termbox.Event {
+	return i.im.GetInputEventChan()
 }
