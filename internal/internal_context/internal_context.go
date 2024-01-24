@@ -82,7 +82,7 @@ func (i InternalContext) GetExecutionList() []dto.CommandIface {
 
 func (i InternalContext) GetPrintFunction() func(msg string) {
 	return func(msg string) {
-		msg = "\n\r" + msg + "\n\r"
+		msg = "\n\r" + msg
 		for _, b := range []byte(msg) {
 			i.GetOutputChan() <- b
 		}

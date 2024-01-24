@@ -62,7 +62,9 @@ func main() {
 	defer close(stopedChan)
 	go processingInput(promptGenerator, &internalContext, exec, cfg, stopedChan)
 
-	<-errs
+	// waiting for stop or error xD
+	e := <-errs
+	internalContext.GetPrintFunction()(e.Error())
 	cancelFunc()
 	<-stopedChan
 }
@@ -133,7 +135,7 @@ func writeOutput(ctx context.Context, outputChan chan byte) {
 		case <-ctx.Done():
 			break
 		case b := <-outputChan:
-			print(b)
+			print(string(b))
 		}
 	}
 }

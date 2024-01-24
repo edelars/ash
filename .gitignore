@@ -13,7 +13,7 @@
 *.txt
 
 debug
-build/
+build/*
 **/.code
 **/.vscode
 .idea/
