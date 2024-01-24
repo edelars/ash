@@ -14,10 +14,25 @@ const (
 )
 
 type ConfigLoader struct {
-	Keybindings []KeyBind `yaml:"keybindings"`
-	Aliases     []Alias   `yaml:"aliases"`
-	Prompt      string    `yaml:"prompt"`
-	Envs        []string  `yaml:"envs"`
+	ConfigFileName string    // for 'config' command output
+	Prompt         string    `yaml:"prompt"`
+	Keybindings    []KeyBind `yaml:"keybindings"`
+	Aliases        []Alias   `yaml:"aliases"`
+	Envs           []string  `yaml:"envs"`
+	Colors         Colors    `yaml:"colors"`
+}
+
+type Colors struct {
+	DefaultText       uint64 `yaml:"defaultText"`
+	DefaultBackground uint64 `yaml:"defaultBackground"`
+	Autocomplete
+}
+
+type Autocomplete struct {
+	SourceText       uint64 `yaml:"sourceText"`
+	SourceBackground uint64 `yaml:"sourceBackground"`
+	ResultKeyText    uint64 `yaml:"resultKeyText"`
+	ResultBackground uint64 `yaml:"resultBackground"`
 }
 
 type KeyBind struct {
@@ -57,14 +72,20 @@ func NewConfigLoader() ConfigLoader {
 	if err != nil {
 		return newConfigLoaderWithDefaults()
 	}
+	config.ConfigFileName = mainConfigFilename
 	return config
 }
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
 		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
-		Aliases:     []Alias{},
 		Prompt:      "ASH> ",
+		Colors: Colors{DefaultText: 0, DefaultBackground: 0, Autocomplete: Autocomplete{
+			SourceText:       1,
+			SourceBackground: 13,
+			ResultKeyText:    1,
+			ResultBackground: 11,
+		}},
 	}
 	return c
 }
@@ -97,4 +118,8 @@ func (c ConfigLoader) GetKeysBindings() []struct {
 
 func (c ConfigLoader) GetEnvs() []string {
 	return c.Envs
+}
+
+func (c ConfigLoader) GetConfig() interface{} {
+	return c
 }

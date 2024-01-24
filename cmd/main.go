@@ -49,7 +49,7 @@ func main() {
 	// load ENVs at start
 	envs_loader.LoadEnvs(cfg)
 
-	intergratedManager := integrated.NewIntegratedManager()
+	intergratedManager := integrated.NewIntegratedManager(&cfg)
 	actionManager := internal_actions.NewInternalAcgionsManager()
 	commandRouter := commands.NewCommandRouter(intergratedManager, actionManager)
 
