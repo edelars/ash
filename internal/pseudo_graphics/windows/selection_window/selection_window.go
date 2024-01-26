@@ -28,17 +28,14 @@ type selectionWindow struct {
 	srKeyForegroundColor   termbox.Attribute
 
 	focused      bool
-	dataSources  DataSource
+	dataSources  dto.DataSource
 	symbolsMap   map[rune]rune
 	currentInput []rune
+	searchFunc   func(patter []rune) dto.DataSource
+	resultFunc   func(cmd dto.CommandIface, userInput []rune)
 }
 
-type DataSource interface {
-	GetCommand(r rune) dto.CommandIface
-	GetData(avalaibleSpace, overheadLinesPerSource int) []dto.GetDataResult
-}
-
-func NewSelectionWindow() selectionWindow {
+func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune)) selectionWindow {
 	sw := selectionWindow{
 		defaultBackgroundColor: 0,
 		defaultForegroundColor: 0,
@@ -47,9 +44,10 @@ func NewSelectionWindow() selectionWindow {
 		srKeyBackgroundColor:   termbox.ColorLightGreen,
 		srKeyForegroundColor:   termbox.ColorBlack,
 		focused:                false,
-		// dataSources:            getData(),
-		symbolsMap:   map[rune]rune{},
-		currentInput: []rune("/Users/senya/go/"),
+		symbolsMap:             map[rune]rune{},
+		currentInput:           userInput,
+		searchFunc:             searchFunc,
+		resultFunc:             resultFunc,
 	}
 	if runewidth.EastAsianWidth {
 		sw.symbolsMap = map[rune]rune{'─': '-', '│': '|', '┌': '+', '└': '+', '┐': '+', '┘': '+'}
@@ -59,17 +57,22 @@ func NewSelectionWindow() selectionWindow {
 	return sw
 }
 
+func (sw *selectionWindow) updateDataSource() {
+	sw.dataSources = sw.searchFunc(sw.currentInput)
+}
+
 func (sw *selectionWindow) KeyInput(key rune) {
 	if sw.focused {
 		sw.currentInput = append(sw.currentInput, rune(key))
+		sw.reDraw(true)
 	} else {
-		sw.keyDown(key)
+		sw.commandChoosed(key)
 	}
 }
 
-func (sw *selectionWindow) keyDown(key rune) {
+func (sw *selectionWindow) commandChoosed(key rune) {
 	if cmd := sw.dataSources.GetCommand(key); cmd != nil {
-		panic(cmd) // TODO
+		sw.resultFunc(cmd, sw.currentInput)
 	}
 }
 
@@ -92,14 +95,14 @@ func (sw *selectionWindow) drawCursor() {
 	}
 }
 
-func (sw *selectionWindow) Draw(x, y, w, h int) {
-	sw.mainX = x
-	sw.mainY = y
-	sw.mainW = w
-	sw.mainH = h
-
+func (sw *selectionWindow) reDraw(clearScreen bool) {
+	if clearScreen {
+		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	}
 	const bottomInputBarH = 2
 	const overheadSpaceForSource = 2
+
+	sw.updateDataSource()
 
 	dataResult := sw.dataSources.GetData(sw.mainH-bottomInputBarH, overheadSpaceForSource)
 
@@ -125,6 +128,14 @@ func (sw *selectionWindow) Draw(x, y, w, h int) {
 	tbprint(curX, curY, termbox.ColorDefault, termbox.ColorDefault, string(sw.currentInput))
 	curX = curX + len(sw.currentInput)
 	sw.setCursor(curX, curY)
+}
+
+func (sw *selectionWindow) Draw(x, y, w, h int) {
+	sw.mainX = x
+	sw.mainY = y
+	sw.mainW = w
+	sw.mainH = h
+	sw.reDraw(false)
 }
 
 func (sw *selectionWindow) fill(x, y, w, h int, cell termbox.Cell) {

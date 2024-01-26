@@ -5,16 +5,18 @@ import (
 )
 
 type commandManager struct {
-	data []dto.CommandIface
+	mainName string
+	data     []dto.CommandIface
 }
 
 func (m commandManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
-	founded := make(map[dto.CommandIface]int8)
 	for _, pattern := range patterns {
+		var founded foundedData
+
 		if pattern.IsPrecisionSearch() {
-			founded = m.precisionSearchInCommands(pattern.GetPattern(), founded)
+			founded = m.precisionSearchInCommands(pattern.GetPattern())
 		} else {
-			founded = m.searchPatternInCommands(pattern.GetPattern(), founded)
+			founded = m.searchPatternInCommands(pattern.GetPattern())
 		}
 		var arr []dto.CommandIface
 		for c := range founded {
@@ -22,15 +24,16 @@ func (m commandManager) SearchCommands(resultChan chan dto.CommandManagerSearchR
 		}
 
 		resultChan <- &searchResult{
-			name:         "internal",
+			name:         m.mainName,
 			commandsData: arr,
 			patternValue: pattern,
 		}
 	}
 }
 
-func NewCommandManager(cmds ...dto.CommandIface) (cm commandManager) {
+func NewCommandManager(mainName string, cmds ...dto.CommandIface) (cm commandManager) {
 	cm.data = append(cm.data, cmds...)
+	cm.mainName = mainName
 	return cm
 }
 
@@ -43,23 +46,33 @@ type foundedData map[dto.CommandIface]int8
 // cd - cd = 100%
 // cd - vv = 0%
 // cd - cc = 50%
-func (m commandManager) searchPatternInCommands(searchPattern string, founded foundedData) foundedData {
+func (m commandManager) searchPatternInCommands(searchPattern string) foundedData {
+	searchPatternRunes := []rune(searchPattern)
+	founded := make(foundedData)
+
 	for _, cmd := range m.data {
+
 		percentCorrect := int8(100)
 		step := getStepValue(cmd.GetName())
-		searchPatternRunes := []rune(searchPattern)
 
-		var counterPattern int
+		cmdRunes := []rune(cmd.GetName())
+		var pointerPattern int
+		var f bool
 
-		for _, cmdRune := range cmd.GetName() {
-			if counterPattern >= len(searchPatternRunes) || cmdRune != searchPatternRunes[counterPattern] {
-				percentCorrect = percentCorrect - step
-			} else {
-				counterPattern++
+	patternLoop:
+		for pointerCmd := 0; pointerCmd < len(cmdRunes); pointerCmd++ {
+			for i := pointerPattern; i < len(searchPatternRunes); i++ {
+				if searchPatternRunes[i] == cmdRunes[pointerCmd] {
+					pointerPattern = i + 1
+					f = true
+					continue patternLoop
+				}
 			}
+			percentCorrect = percentCorrect - step
 		}
-		if percentCorrect > 0 {
-			founded[cmd] = int8(percentCorrect)
+
+		if percentCorrect > 0 && f {
+			founded[cmd] = percentCorrect
 		}
 	}
 	return founded
@@ -73,7 +86,8 @@ func getStepValue(s string) int8 {
 	return int8(100 / runeCount)
 }
 
-func (m commandManager) precisionSearchInCommands(searchName string, founded foundedData) foundedData {
+func (m commandManager) precisionSearchInCommands(searchName string) foundedData {
+	founded := make(foundedData)
 	for _, cmd := range m.data {
 		if cmd.GetName() == searchName {
 			founded[cmd] = 100

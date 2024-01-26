@@ -38,8 +38,8 @@ type InternalContextIface interface {
 	GetEnv(envName string) string
 	GetCurrentDir() string
 	WithLastKeyPressed(b byte) InternalContextIface
-	WithCurrentInputBuffer(b []byte) InternalContextIface
-	GetCurrentInputBuffer() []byte
+	WithCurrentInputBuffer(b []rune) InternalContextIface
+	GetCurrentInputBuffer() []rune
 	GetLastKeyPressed() byte
 	GetCTX() context.Context
 	GetInputEventChan() chan termbox.Event

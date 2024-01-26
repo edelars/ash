@@ -24,6 +24,10 @@ func (searchresult *searchResult) Founded() int {
 	return len(searchresult.commandsData)
 }
 
+func (searchresult *searchResult) GetPattern() dto.PatternIface {
+	return nil
+}
+
 type commandImpl struct {
 	Weight int8
 	Name   string
@@ -84,7 +88,7 @@ func Test_sortSlice(t *testing.T) {
 
 func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 	type fields struct {
-		originalData []SearchResultIface
+		originalData []dto.CommandManagerSearchResult
 	}
 	type args struct {
 		avalaibleSpace         int
@@ -94,12 +98,12 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []GetDataResult
+		want   []dto.GetDataResult
 	}{
 		{
 			name: "1",
 			fields: fields{
-				originalData: []SearchResultIface{&searchResult{
+				originalData: []dto.CommandManagerSearchResult{&searchResult{
 					name:         "1",
 					commandsData: []dto.CommandIface{&commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}},
 				}, &searchResult{
@@ -114,21 +118,21 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 				avalaibleSpace:         20,
 				overheadLinesPerSource: 2,
 			},
-			want: []GetDataResult{{
+			want: []dto.GetDataResult{{
 				SourceName: "1",
-				Items:      make([]GetDataResultItem, 4),
+				Items:      make([]dto.GetDataResultItem, 4),
 			}, {
 				SourceName: "2",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}, {
 				SourceName: "3",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}},
 		},
 		{
 			name: "2",
 			fields: fields{
-				originalData: []SearchResultIface{&searchResult{
+				originalData: []dto.CommandManagerSearchResult{&searchResult{
 					name:         "1",
 					commandsData: []dto.CommandIface{&commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}},
 				}, &searchResult{
@@ -143,21 +147,21 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 				avalaibleSpace:         9,
 				overheadLinesPerSource: 2,
 			},
-			want: []GetDataResult{{
+			want: []dto.GetDataResult{{
 				SourceName: "1",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}, {
 				SourceName: "2",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}, {
 				SourceName: "3",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}},
 		},
 		{
 			name: "3",
 			fields: fields{
-				originalData: []SearchResultIface{&searchResult{
+				originalData: []dto.CommandManagerSearchResult{&searchResult{
 					name:         "1",
 					commandsData: []dto.CommandIface{&commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}},
 				}, &searchResult{
@@ -172,21 +176,21 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 				avalaibleSpace:         13,
 				overheadLinesPerSource: 2,
 			},
-			want: []GetDataResult{{
+			want: []dto.GetDataResult{{
 				SourceName: "1",
-				Items:      make([]GetDataResultItem, 2),
+				Items:      make([]dto.GetDataResultItem, 2),
 			}, {
 				SourceName: "2",
-				Items:      make([]GetDataResultItem, 2),
+				Items:      make([]dto.GetDataResultItem, 2),
 			}, {
 				SourceName: "3",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}},
 		},
 		{
 			name: "4",
 			fields: fields{
-				originalData: []SearchResultIface{&searchResult{
+				originalData: []dto.CommandManagerSearchResult{&searchResult{
 					name:         "1",
 					commandsData: []dto.CommandIface{&commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}, &commandImpl{}},
 				}, &searchResult{
@@ -204,18 +208,18 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 				avalaibleSpace:         21,
 				overheadLinesPerSource: 2,
 			},
-			want: []GetDataResult{{
+			want: []dto.GetDataResult{{
 				SourceName: "1",
-				Items:      make([]GetDataResultItem, 3),
+				Items:      make([]dto.GetDataResultItem, 3),
 			}, {
 				SourceName: "2",
-				Items:      make([]GetDataResultItem, 3),
+				Items:      make([]dto.GetDataResultItem, 3),
 			}, {
 				SourceName: "3",
-				Items:      make([]GetDataResultItem, 3),
+				Items:      make([]dto.GetDataResultItem, 3),
 			}, {
 				SourceName: "4",
-				Items:      make([]GetDataResultItem, 1),
+				Items:      make([]dto.GetDataResultItem, 1),
 			}},
 		},
 	}
@@ -225,7 +229,7 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 				originalData: tt.fields.originalData,
 			}
 			if got := datasourceimpl.initGetDataResult(tt.args.avalaibleSpace, tt.args.overheadLinesPerSource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("dataSourceImpl.initGetDataResult() = %v, want %v", got, tt.want)
+				t.Errorf("dataSourceImpl.initdto.GetDataResult() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -233,7 +237,7 @@ func Test_dataSourceImpl_initGetDataResult(t *testing.T) {
 
 func Test_dataSourceImpl_generateRune(t *testing.T) {
 	type fields struct {
-		originalData []SearchResultIface
+		originalData []dto.CommandManagerSearchResult
 	}
 	type args struct {
 		i rune
@@ -283,7 +287,7 @@ func Test_dataSourceImpl_generateRune(t *testing.T) {
 
 func Test_dataSourceImpl_GetData(t *testing.T) {
 	type fields struct {
-		originalData []SearchResultIface
+		originalData []dto.CommandManagerSearchResult
 		keyMapping   map[rune]dto.CommandIface
 	}
 	type args struct {
@@ -294,12 +298,12 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   []GetDataResult
+		want   []dto.GetDataResult
 	}{
 		{
 			name: "1",
 			fields: fields{
-				originalData: []SearchResultIface{&searchResult{
+				originalData: []dto.CommandManagerSearchResult{&searchResult{
 					name: "1",
 				}, &searchResult{
 					name:         "2",
@@ -313,15 +317,15 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 				avalaibleSpace:         30,
 				overheadLinesPerSource: 2,
 			},
-			want: []GetDataResult{{
+			want: []dto.GetDataResult{{
 				SourceName: "2",
-				Items: []GetDataResultItem{{
+				Items: []dto.GetDataResultItem{{
 					Name:       "22",
 					ButtonRune: 'a',
 				}},
 			}, {
 				SourceName: "3",
-				Items: []GetDataResultItem{{
+				Items: []dto.GetDataResultItem{{
 					Name:       "33",
 					ButtonRune: 'b',
 				}, {

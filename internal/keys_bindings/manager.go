@@ -21,17 +21,20 @@ func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter command
 		m[kb.Action] = kb.Key
 	}
 	sr := commandRouter.SearchCommands(patterns...)
-
+patternLoop:
 	for _, pattern := range patterns {
 		cmsr := sr.GetDataByPattern(pattern)
-		if len(cmsr) == 1 {
-			if commands := cmsr[0].GetCommands(); len(commands) == 1 {
+
+		for _, v := range cmsr {
+			if commands := v.GetCommands(); len(commands) > 0 {
 				if key, ok := m[commands[0].GetName()]; ok {
 					kb.bindings[key] = commands[0]
+					continue patternLoop
 				}
 			}
 		}
 	}
+	println(len(kb.bindings))
 	return kb
 }
 

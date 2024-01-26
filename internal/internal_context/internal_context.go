@@ -14,19 +14,21 @@ type InternalContext struct {
 	errs               chan error
 	currentKeyPressed  byte
 	ctx                context.Context
-	currentInputBuffer []byte
+	currentInputBuffer []rune
 	executionList      []dto.CommandIface
+	printFunc          func(msg string)
 }
 type inputManager interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(ctx context.Context, im inputManager, outputChan chan byte, errs chan error) InternalContext {
+func NewInternalContext(ctx context.Context, im inputManager, outputChan chan byte, errs chan error, printFunc func(msg string)) InternalContext {
 	return InternalContext{
 		ctx:        ctx,
 		im:         im,
 		outputChan: outputChan,
 		errs:       errs,
+		printFunc:  printFunc,
 	}
 }
 
@@ -47,12 +49,12 @@ func (i InternalContext) WithLastKeyPressed(b byte) dto.InternalContextIface {
 	return i
 }
 
-func (i InternalContext) WithCurrentInputBuffer(b []byte) dto.InternalContextIface {
+func (i InternalContext) WithCurrentInputBuffer(b []rune) dto.InternalContextIface {
 	i.currentInputBuffer = b
 	return i
 }
 
-func (i InternalContext) GetCurrentInputBuffer() []byte {
+func (i InternalContext) GetCurrentInputBuffer() []rune {
 	return i.currentInputBuffer
 }
 
@@ -82,12 +84,13 @@ func (i InternalContext) GetExecutionList() []dto.CommandIface {
 }
 
 func (i InternalContext) GetPrintFunction() func(msg string) {
-	return func(msg string) {
-		msg = "\n\r" + msg
-		for _, b := range []byte(msg) {
-			i.GetOutputChan() <- b
-		}
-	}
+	return i.printFunc
+	// return func(msg string) {
+	// 	msg = "\n\r" + msg
+	// 	for _, b := range []byte(msg) {
+	// 		i.GetOutputChan() <- b
+	// 	}
+	// }
 }
 
 func (i InternalContext) GetInputEventChan() chan termbox.Event {

@@ -68,7 +68,7 @@ func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.Command
 		patternValue: commands.NewPattern("get", true),
 	})
 
-	return &res
+	return res
 }
 
 type searchResult struct {

@@ -19,6 +19,7 @@ import (
 	"ash/internal/input_manager"
 	"ash/internal/internal_context"
 	"ash/internal/keys_bindings"
+	"ash/internal/pseudo_graphics/drawer"
 
 	"github.com/nsf/termbox-go"
 )
@@ -49,11 +50,16 @@ func main() {
 	// load ENVs at start
 	envs_loader.LoadEnvs(cfg)
 
-	intergratedManager := integrated.NewIntegratedManager(&cfg)
-	actionManager := internal_actions.NewInternalAcgionsManager()
-	commandRouter := commands.NewCommandRouter(intergratedManager, actionManager)
+	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":Backspace"))
 
-	internalContext := internal_context.NewInternalContext(ctx, &inputManager, outputChan, errs)
+	// managers init
+	intergratedManager := integrated.NewIntegratedManager(&cfg)
+	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager())
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc())
+	commandRouter.AddNewCommandManager(actionManager)
+	// done managers init
+
+	internalContext := internal_context.NewInternalContext(ctx, &inputManager, outputChan, errs, inputManager.GetPrintFunction())
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
@@ -70,7 +76,7 @@ func main() {
 }
 
 func processingInput(prompt Prompt, internalC dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader, stopedChan chan struct{}) {
-	var currentBytes []byte
+	var currentBytes []rune
 	ctx := internalC.GetCTX()
 	outputChan := internalC.GetOutputChan()
 	inputEventChan := internalC.GetInputEventChan()
@@ -87,6 +93,9 @@ mainLoop:
 			switch ev.Type {
 			case termbox.EventKey:
 				switch ev.Key {
+
+				// переделать все действия через роутер!!!!!!
+
 				case termbox.Key(cfg.GetKeyBind(":Backspace")):
 					for _, v := range "\b\033[K" {
 						outputChan <- byte(v)
@@ -95,7 +104,7 @@ mainLoop:
 					continue
 				default:
 					if ev.Ch != 0 && unicode.IsPrint(rune(ev.Ch)) {
-						currentBytes = append(currentBytes, byte(ev.Ch))
+						currentBytes = append(currentBytes, ev.Ch)
 						outputChan <- byte(ev.Ch)
 
 					} else {

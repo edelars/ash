@@ -26,22 +26,22 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 	}
 }
 
-func (r commandExecutor) Execute(internalC dto.InternalContextIface) {
-	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(internalC.GetLastKeyPressed())); mainCommand != nil {
+func (r commandExecutor) Execute(iContext dto.InternalContextIface) {
+	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(iContext.GetLastKeyPressed())); mainCommand != nil {
 		var err error
-		if internalC, err = r.prepareExecutionList(internalC); err != nil {
-			internalC.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
+		if iContext, err = r.prepareExecutionList(iContext); err != nil {
+			iContext.GetPrintFunction()(fmt.Sprintf("Error execute: %s", err.Error()))
 		}
-		mainCommand.GetExecFunc()(internalC)
+		mainCommand.GetExecFunc()(iContext)
 	} else {
-		internalC.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", internalC.GetLastKeyPressed()))
+		iContext.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", iContext.GetLastKeyPressed()))
 	}
 }
 
-func (r commandExecutor) prepareExecutionList(internalC dto.InternalContextIface) (dto.InternalContextIface, error) {
+func (r commandExecutor) prepareExecutionList(iContext dto.InternalContextIface) (dto.InternalContextIface, error) {
 	var executionList []dto.CommandIface
 
-	pattrensArr, argsArr := splitToArrays(string(internalC.GetCurrentInputBuffer()))
+	pattrensArr, argsArr := splitToArrays(string(iContext.GetCurrentInputBuffer()))
 	crsr := r.commandRouter.SearchCommands(pattrensArr...)
 	for counter, pattern := range pattrensArr {
 		cmsr := crsr.GetDataByPattern(pattern)
@@ -49,17 +49,17 @@ func (r commandExecutor) prepareExecutionList(internalC dto.InternalContextIface
 		case 1:
 			commands := cmsr[0].GetCommands()
 			if len(commands) != 1 {
-				return internalC, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+				return iContext, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
 			}
 			executionList = append(executionList, commands[0].WithArgs(argsArr[counter]))
 		case 0:
-			return internalC, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
+			return iContext, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
 		default:
-			return internalC, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+			return iContext, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
 		}
 	}
 
-	return internalC.WithExecutionList(executionList), nil
+	return iContext.WithExecutionList(executionList), nil
 }
 
 type routerIface interface {

@@ -23,26 +23,33 @@ func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.Command
 	resultChan := make(chan dto.CommandManagerSearchResult, r.getCommandManagerCount())
 	defer close(resultChan)
 
+	wg.Add(len(patterns) * r.getCommandManagerCount())
+
 	go func() {
-		for r := range resultChan {
-			if r.Founded() != 0 {
-				res.AddResult(r)
+		for rFromChan := range resultChan {
+			if rFromChan.Founded() != 0 {
+				res.AddResult(rFromChan)
 			}
 			wg.Done()
 		}
 	}()
-
 	for _, cm := range r.commandManagers {
 		go cm.SearchCommands(resultChan, patterns...)
-		wg.Add(len(patterns))
 	}
 
 	wg.Wait()
-	return &res
+
+	return res
 }
 
 func (r *commandRouter) getCommandManagerCount() int {
 	return len(r.commandManagers)
+}
+
+func (r *commandRouter) GetSearchFunc() func(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+	return func(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+		return r.SearchCommands(pattern).GetDataByPattern(pattern)
+	}
 }
 
 func NewCommandRouter(commandManagers ...CommandManagerIface) commandRouter {
@@ -61,21 +68,27 @@ type CommandManagerIface interface {
 	SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface)
 }
 
-func NewCommandRouterSearchResult() commandRouterSearchResult {
+func NewCommandRouterSearchResult() *commandRouterSearchResult {
 	c := commandRouterSearchResult{
 		data: make(map[dto.PatternIface][]dto.CommandManagerSearchResult),
 	}
-	return c
+	return &c
 }
 
 type commandRouterSearchResult struct {
+	sync.Mutex
 	data map[dto.PatternIface][]dto.CommandManagerSearchResult
 }
 
 func (c *commandRouterSearchResult) AddResult(searchResult dto.CommandManagerSearchResult) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
 	c.data[searchResult.GetPattern()] = append(c.data[searchResult.GetPattern()], searchResult)
 }
 
 func (c *commandRouterSearchResult) GetDataByPattern(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+
 	return c.data[pattern]
 }

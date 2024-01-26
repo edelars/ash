@@ -6,30 +6,9 @@ import (
 	"ash/internal/dto"
 )
 
-type DataSource interface {
-	GetCommand(r rune) dto.CommandIface
-	GetData(avalaibleSpace, overheadLinesPerSource int) []GetDataResult
-}
-
-type GetDataResult struct {
-	SourceName string
-	Items      []GetDataResultItem
-}
-
-type GetDataResultItem struct {
-	Name       string
-	ButtonRune rune
-}
-
 type dataSourceImpl struct {
-	originalData []SearchResultIface
+	originalData []dto.CommandManagerSearchResult
 	keyMapping   map[rune]dto.CommandIface
-}
-
-type SearchResultIface interface {
-	GetSourceName() string
-	GetCommands() []dto.CommandIface
-	Founded() int
 }
 
 type dataSourceImplItem struct {
@@ -42,7 +21,7 @@ func (ds *dataSourceImpl) GetCommand(r rune) dto.CommandIface {
 	return ds.keyMapping[r]
 }
 
-func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []GetDataResult {
+func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []dto.GetDataResult {
 	res := ds.initGetDataResult(avalaibleSpace, overheadLinesPerSource)
 
 	var totalResCount int
@@ -79,7 +58,7 @@ func (ds *dataSourceImpl) generateRune(i rune) rune {
 	}
 }
 
-func (ds *dataSourceImpl) initGetDataResult(avalaibleSpace, overheadLinesPerSource int) []GetDataResult {
+func (ds *dataSourceImpl) initGetDataResult(avalaibleSpace, overheadLinesPerSource int) []dto.GetDataResult {
 	var totalFilledSources, additionalFreeSpace, overloadSourceCount, addSpacePerSource int
 
 	for _, v := range ds.originalData {
@@ -98,7 +77,7 @@ func (ds *dataSourceImpl) initGetDataResult(avalaibleSpace, overheadLinesPerSour
 	}
 
 	spaceForEverySource := (avalaibleSpace - overheadLinesPerSource*totalFilledSources) / totalFilledSources
-	res := make([]GetDataResult, totalFilledSources, totalFilledSources)
+	res := make([]dto.GetDataResult, totalFilledSources, totalFilledSources)
 
 	for _, sr := range ds.originalData {
 		if sr.Founded() == 0 {
@@ -129,9 +108,9 @@ func (ds *dataSourceImpl) initGetDataResult(avalaibleSpace, overheadLinesPerSour
 		} else if size > c {
 			size = c
 		}
-		newGetDataResult := GetDataResult{
+		newGetDataResult := dto.GetDataResult{
 			SourceName: sr.GetSourceName(),
-			Items:      make([]GetDataResultItem, size),
+			Items:      make([]dto.GetDataResultItem, size),
 		}
 		res[drCount] = newGetDataResult
 		drCount++
@@ -146,10 +125,10 @@ func sortSlice(cmds []dto.CommandIface) []dto.CommandIface {
 	return cmds
 }
 
-func NewDataSource(sr []SearchResultIface) dataSourceImpl {
+func NewDataSource(sr []dto.CommandManagerSearchResult) dto.DataSource {
 	ds := dataSourceImpl{
 		originalData: sr,
 		keyMapping:   make(map[rune]dto.CommandIface),
 	}
-	return ds
+	return &ds
 }

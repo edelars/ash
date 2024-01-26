@@ -16,16 +16,22 @@ func Test_commandManager_SearchCommands(t *testing.T) {
 	}
 	c1 := NewCommand("exit", f)
 	c2 := NewCommand("dobus", f)
-	c3 := NewCommand("ggalk", f)
+	c3 := NewCommand("999", f)
 
 	im := commandManager{data: []dto.CommandIface{c1, c2, c3}}
-	ch := make(chan dto.CommandManagerSearchResult, 1)
-	p := NewPattern("ext", false)
+	ch := make(chan dto.CommandManagerSearchResult, 3)
+	defer close(ch)
+	p1 := NewPattern("ext", false)
+	p2 := NewPattern("dobus", false)
 
-	im.SearchCommands(ch, p)
+	im.SearchCommands(ch, p1, p2)
 	res := <-ch
 	assert.Equal(t, 1, len(res.GetCommands()))
 	assert.Equal(t, "exit", res.GetCommands()[0].GetName())
+
+	res = <-ch
+	assert.Equal(t, 1, len(res.GetCommands()))
+	assert.Equal(t, "dobus", res.GetCommands()[0].GetName())
 }
 
 func Test_commandManager_searchPatternInCommands(t *testing.T) {
@@ -35,13 +41,14 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 	c1 := NewCommand("exit", f)
 	c2 := NewCommand("dobus", f)
 	c3 := NewCommand("gettalk", f)
+	c4 := NewCommand("8888", f)
+	c5 := NewCommand("1234567890", f)
 
 	type fields struct {
 		data []dto.CommandIface
 	}
 	type args struct {
 		searchPattern string
-		founded       foundedData
 	}
 	tests := []struct {
 		name   string
@@ -50,35 +57,73 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 		want   foundedData
 	}{
 		{
+			name: "20%_10",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+			},
+			args: args{
+				searchPattern: "90",
+			},
+			want: map[dto.CommandIface]int8{c5: 20},
+		},
+		{
+			name: "50%_10",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+			},
+			args: args{
+				searchPattern: "24680",
+			},
+			want: map[dto.CommandIface]int8{c4: 25, c5: 50},
+		},
+		{
+			name: "50%_10_2",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+			},
+			args: args{
+				searchPattern: "12345",
+			},
+			want: map[dto.CommandIface]int8{c5: 50},
+		},
+		{
+			name: "50%_10_3",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+			},
+			args: args{
+				searchPattern: "12390",
+			},
+			want: map[dto.CommandIface]int8{c5: 50},
+		},
+
+		{
 			name: "100",
 			fields: fields{
-				data: []dto.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2, c4},
 			},
 			args: args{
 				searchPattern: "exit",
-				founded:       map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{c1: 100},
 		},
 		{
 			name: "50",
 			fields: fields{
-				data: []dto.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2, c4},
 			},
 			args: args{
 				searchPattern: "et",
-				founded:       map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{c1: 50},
 		},
 		{
 			name: "none",
 			fields: fields{
-				data: []dto.CommandIface{c1, c2},
+				data: []dto.CommandIface{c1, c2, c3, c4},
 			},
 			args: args{
 				searchPattern: "555",
-				founded:       map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{},
 		},
@@ -89,9 +134,18 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			},
 			args: args{
 				searchPattern: "ttk",
-				founded:       map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{c3: 44},
+		},
+		{
+			name: "gobus",
+			fields: fields{
+				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+			},
+			args: args{
+				searchPattern: "gobus",
+			},
+			want: map[dto.CommandIface]int8{c2: 80, c3: 16},
 		},
 	}
 	for _, tt := range tests {
@@ -99,7 +153,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			m := commandManager{
 				data: tt.fields.data,
 			}
-			if got := m.searchPatternInCommands(tt.args.searchPattern, tt.args.founded); !reflect.DeepEqual(got, tt.want) {
+			if got := m.searchPatternInCommands(tt.args.searchPattern); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IntergatedManager.searchPatternInCommands() = %v, want %v", got, tt.want)
 			}
 		})
@@ -115,6 +169,13 @@ func Test_getStepValue(t *testing.T) {
 		args args
 		want int8
 	}{
+		{
+			name: "1234567890",
+			args: args{
+				s: "1234567890",
+			},
+			want: 10,
+		},
 		{
 			name: "getexit",
 			args: args{
@@ -174,7 +235,6 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 	}
 	type args struct {
 		searchName string
-		founded    foundedData
 	}
 	tests := []struct {
 		name   string
@@ -189,7 +249,6 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			},
 			args: args{
 				searchName: "exit",
-				founded:    map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{c1: 100},
 		},
@@ -200,7 +259,6 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			},
 			args: args{
 				searchName: "gettalk",
-				founded:    map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{c3: 100},
 		},
@@ -211,7 +269,6 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			},
 			args: args{
 				searchName: "et",
-				founded:    map[dto.CommandIface]int8{},
 			},
 			want: map[dto.CommandIface]int8{},
 		},
@@ -222,7 +279,7 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			m := commandManager{
 				data: tt.fields.data,
 			}
-			if got := m.precisionSearchInCommands(tt.args.searchName, tt.args.founded); !reflect.DeepEqual(got, tt.want) {
+			if got := m.precisionSearchInCommands(tt.args.searchName); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IntergatedManager.precisionSearchInCommands() = %v, want %v", got, tt.want)
 			}
 		})
