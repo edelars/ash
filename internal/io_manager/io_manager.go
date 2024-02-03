@@ -1,16 +1,19 @@
-package input_manager
+package io_manager
 
 import (
 	"context"
 	"errors"
 
 	"ash/internal/commands"
-	"ash/internal/input_output_manager/list"
+	"ash/internal/io_manager/list"
 
 	"github.com/nsf/termbox-go"
 )
 
-const constManagerName = "InputOutput"
+const (
+	constManagerName = "InputOutput"
+	constEmptyRune   = ' '
+)
 
 type inputManager struct {
 	cursorX                int
@@ -20,7 +23,6 @@ type inputManager struct {
 	inputEventChan         chan termbox.Event
 	defaultBackgroundColor termbox.Attribute
 	defaultForegroundColor termbox.Attribute
-	currentUserInput       []termbox.Cell
 }
 
 func (i *inputManager) Init() error {
@@ -35,7 +37,9 @@ func (i *inputManager) Init() error {
 func (i *inputManager) Start(ctx context.Context) error {
 	defer termbox.Close()
 	defer close(i.inputEventChan)
+	go i.listenOutputCellChan(ctx)
 
+	i.moveCursorAtStartPostion()
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -54,11 +58,13 @@ func (i *inputManager) Start(ctx context.Context) error {
 
 func (i *inputManager) listenOutputCellChan(ctx context.Context) {
 	defer close(i.outputCellChan)
-	select {
-	case <-ctx.Done():
-		return
-	case cells := <-i.outputCellChan:
-		i.printCells(cells)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case cells := <-i.outputCellChan:
+			i.printCells(cells)
+		}
 	}
 }
 
@@ -70,36 +76,49 @@ func (i *inputManager) printCells(cells []termbox.Cell) {
 
 func (i *inputManager) redrawCursor() {
 	termbox.SetCursor(i.cursorX, i.cursorY)
+	termbox.Flush()
 }
 
 func (i *inputManager) moveCursorLeft() {
-	i.cursorX--
+	if i.cursorX > 0 {
+		i.cursorX--
+	}
 	i.redrawCursor()
 }
 
-func (i *inputManager) moveCursorRigth() {
+func (i *inputManager) moveCursorRight() {
 	i.cursorX++
 	i.redrawCursor()
 }
 
 func (i *inputManager) deleteLeftSymbolAndMoveCursor() {
-	i.moveCursorLeft()
+	if i.cursorX > 0 {
+		termbox.SetCell(i.cursorX-1, i.cursorY, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
+		i.moveCursorLeft()
+	}
 }
 
 func (i *inputManager) moveCursorAtStartPostion() {
-	i.moveCursorLeft()
+	i.cursorX = 0
+
+	_, h := termbox.Size()
+	i.cursorY = h - 1
+
+	i.redrawCursor()
 }
 
 func (i *inputManager) printSymbol(c termbox.Cell) {
+	if c.Ch == rune('\r') {
+		return
+	}
 	if c.Ch == rune('\n') {
-		rollScreenUp(termbox.GetCell, termbox.SetCell)
-		i.currentUserInput = nil
+		w, h := termbox.Size()
+		i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
 		i.moveCursorAtStartPostion()
 		return
 	}
-
 	termbox.SetCell(i.cursorX, i.cursorY, c.Ch, c.Fg, c.Bg)
-	i.moveCursorRigth()
+	i.moveCursorRight()
 }
 
 func (i *inputManager) GetInputEventChan() chan termbox.Event {
@@ -120,19 +139,32 @@ func (i *inputManager) GetManager() commands.CommandManagerIface {
 	return i.manager
 }
 
-func NewInputManager() inputManager {
+func NewInputManager(pm promptManager) *inputManager {
 	im := inputManager{
 		inputEventChan:         make(chan termbox.Event),
-		outputCellChan:         make(chan []termbox.Cell),
+		outputCellChan:         make(chan []termbox.Cell, 1),
 		defaultBackgroundColor: termbox.ColorDefault,
 		defaultForegroundColor: termbox.ColorDefault,
 	}
 	im.manager = commands.NewCommandManager(constManagerName,
-		list.NewRemoveLeftSymbol(im.deleteLeftSymbolAndMoveCursor),
+		list.NewRemoveLeftSymbol(im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)
-
-	return im
+	return &im
 }
 
-func rollScreenUp(get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+type promptManager interface {
+	DeleteLastSymbolFromCurrentBuffer() error
+}
+
+func (i *inputManager) rollScreenUp(offset, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+	for y := 0; y < screenHeight; y++ {
+		for x := 0; x < screenWidth; x++ {
+			if y+offset >= screenHeight {
+				set(x, y, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
+			} else {
+				curCell := get(x, y+offset)
+				set(x, y, curCell.Ch, curCell.Fg, curCell.Bg)
+			}
+		}
+	}
 }

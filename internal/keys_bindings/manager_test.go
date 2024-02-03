@@ -59,12 +59,12 @@ func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.Command
 	p := commands.NewPattern(":exec", true)
 	res.AddResult(&searchResult{
 		name:         ":exec",
-		commandsData: []dto.CommandIface{commands.NewCommand(":exec", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand(":exec", nil, true)},
 		patternValue: p,
 	})
 	res.AddResult(&searchResult{
 		name:         "get",
-		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil, true)},
 		patternValue: commands.NewPattern("get", true),
 	})
 
@@ -109,17 +109,17 @@ func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 		{
 			name: "ok",
 			fields: fields{
-				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil), 22: nil},
+				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil, true), 22: nil},
 			},
 			args: args{
 				key: 13,
 			},
-			want: commands.NewCommand("12", nil),
+			want: commands.NewCommand("12", nil, true),
 		},
 		{
 			name: "nil",
 			fields: fields{
-				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil)},
+				bindings: map[uint16]dto.CommandIface{13: commands.NewCommand("12", nil, true)},
 			},
 			args: args{
 				key: 113,

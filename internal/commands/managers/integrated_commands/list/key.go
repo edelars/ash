@@ -11,24 +11,24 @@ import (
 
 func NewKeyCommand() *commands.Command {
 	return commands.NewCommand("_key",
-		func(internalC dto.InternalContextIface) {
-			internalC.GetPrintFunction()("press Enter (13) key to break")
+		func(internalC dto.InternalContextIface) int {
+			internalC.GetPrintFunction()("press Enter (13) key to break\n")
 			for {
 				ev := <-internalC.GetInputEventChan()
 				switch ev.Type {
 				case termbox.EventKey:
 					if ev.Ch != 0 {
-						internalC.GetPrintFunction()(fmt.Sprintf("got key: %d", ev.Ch))
+						internalC.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Ch))
 					} else {
 						switch ev.Ch {
 						case 13:
-							return
+							return 0
 						default:
-							internalC.GetPrintFunction()(fmt.Sprintf("got key: %d", ev.Key))
+							internalC.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Key))
 						}
 					}
 				}
 
 			}
-		})
+		}, true)
 }

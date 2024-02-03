@@ -57,6 +57,10 @@ func (commandImpl *commandImpl) GetName() string {
 	return commandImpl.Name
 }
 
+func (commandImpl *commandImpl) MustPrepareExecutionList() bool {
+	return true
+}
+
 func Test_sortSlice(t *testing.T) {
 	c1 := commandImpl{Weight: 99, Name: "99"}
 	c2 := commandImpl{Weight: 30, Name: "30"}

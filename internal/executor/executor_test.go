@@ -112,7 +112,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 			args: args{
 				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]rune("get | put")),
 			},
-			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil), commands.NewCommand("put", nil)}),
+			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil, true), commands.NewCommand("put", nil, true)}),
 			wantErr: false,
 		},
 		{
@@ -124,7 +124,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 			args: args{
 				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]rune("get |")),
 			},
-			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil)}),
+			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil, true)}),
 			wantErr: false,
 		},
 		{
@@ -136,7 +136,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 			args: args{
 				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]rune("get asd | put 456")),
 			},
-			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil).WithArgs("asd"), commands.NewCommand("put", nil).WithArgs("456")}),
+			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil, true).WithArgs("asd"), commands.NewCommand("put", nil, true).WithArgs("456")}),
 			wantErr: false,
 		},
 		{
@@ -187,12 +187,12 @@ func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.Command
 
 	res.AddResult(&searchResult{
 		name:         "get",
-		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil, true)},
 		patternValue: commands.NewPattern("get", true),
 	})
 	res.AddResult(&searchResult{
 		name:         "put",
-		commandsData: []dto.CommandIface{commands.NewCommand("put", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand("put", nil, true)},
 		patternValue: commands.NewPattern("put", true),
 	})
 	return res
@@ -212,12 +212,12 @@ func (r commRouterImpl3) SearchCommands(patterns ...dto.PatternIface) dto.Comman
 
 	res.AddResult(&searchResult{
 		name:         "get",
-		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil, true)},
 		patternValue: commands.NewPattern("get", true),
 	})
 	res.AddResult(&searchResult{
 		name:         "get",
-		commandsData: []dto.CommandIface{commands.NewCommand("get", nil)},
+		commandsData: []dto.CommandIface{commands.NewCommand("get", nil, true)},
 		patternValue: commands.NewPattern("get", true),
 	})
 	return res
@@ -249,7 +249,7 @@ func TestCommandExecutor_Execute(t *testing.T) {
 	cr := commRouterImpl{}
 	kb := keyBinderImpl{}
 	ce := NewCommandExecutor(cr, &kb)
-	ic := internal_context.NewInternalContext(context.Background(), nil, nil, nil, func(msg string) {}).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
+	ic := internal_context.NewInternalContext(context.Background(), nil, nil, func(msg string) {}).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
 	ce.Execute(ic)
 	assert.Equal(t, true, kb.Success)
 	assert.Equal(t, 0, len(ic.GetExecutionList()))
@@ -261,9 +261,10 @@ type keyBinderImpl struct {
 
 func (kb *keyBinderImpl) GetCommandByKey(key uint16) dto.CommandIface {
 	if key == 13 {
-		return commands.NewCommand("get", func(_ dto.InternalContextIface) {
+		return commands.NewCommand("get", func(_ dto.InternalContextIface) int {
 			kb.Success = true
-		})
+			return 0
+		}, true)
 	}
 	return nil
 }

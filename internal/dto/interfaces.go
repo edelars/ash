@@ -24,9 +24,10 @@ type CommandIface interface {
 	GetName() string
 	WithArgs(args string) CommandIface
 	GetArgs() string
+	MustPrepareExecutionList() bool // current user input ready for exec and need to prepare exec list
 }
 
-type ExecF func(internalC InternalContextIface)
+type ExecF func(internalC InternalContextIface) int // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
 
 type PatternIface interface {
 	GetPattern() string
@@ -43,7 +44,6 @@ type InternalContextIface interface {
 	GetLastKeyPressed() byte
 	GetCTX() context.Context
 	GetInputEventChan() chan termbox.Event
-	GetOutputChan() chan byte
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface
 	GetExecutionList() []CommandIface

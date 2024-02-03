@@ -10,7 +10,7 @@ import (
 
 func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(pattern dto.PatternIface) []dto.CommandManagerSearchResult) *commands.Command {
 	return commands.NewCommand(":Autocomplete",
-		func(internalC dto.InternalContextIface) {
+		func(internalC dto.InternalContextIface) int {
 			doneChan := make(chan struct{}, 1)
 			defer close(doneChan)
 
@@ -25,5 +25,6 @@ func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(pattern d
 
 			pWindow := selection_window.NewSelectionWindow(internalC.GetCurrentInputBuffer(), sFunc, rFunc)
 			dr.Draw(&pWindow, internalC, doneChan)
-		})
+			return -1
+		}, false)
 }

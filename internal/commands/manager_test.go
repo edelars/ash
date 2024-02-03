@@ -11,12 +11,12 @@ import (
 )
 
 func Test_commandManager_SearchCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) {
+	f := func(internalC dto.InternalContextIface) int {
 		panic("exit")
 	}
-	c1 := NewCommand("exit", f)
-	c2 := NewCommand("dobus", f)
-	c3 := NewCommand("999", f)
+	c1 := NewCommand("exit", f, true)
+	c2 := NewCommand("dobus", f, true)
+	c3 := NewCommand("999", f, true)
 
 	im := commandManager{data: []dto.CommandIface{c1, c2, c3}}
 	ch := make(chan dto.CommandManagerSearchResult, 3)
@@ -35,14 +35,14 @@ func Test_commandManager_SearchCommands(t *testing.T) {
 }
 
 func Test_commandManager_searchPatternInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) {
+	f := func(internalC dto.InternalContextIface) int {
 		panic("exit")
 	}
-	c1 := NewCommand("exit", f)
-	c2 := NewCommand("dobus", f)
-	c3 := NewCommand("gettalk", f)
-	c4 := NewCommand("8888", f)
-	c5 := NewCommand("1234567890", f)
+	c1 := NewCommand("exit", f, true)
+	c2 := NewCommand("dobus", f, true)
+	c3 := NewCommand("gettalk", f, true)
+	c4 := NewCommand("8888", f, true)
+	c5 := NewCommand("1234567890", f, true)
 
 	type fields struct {
 		data []dto.CommandIface
@@ -222,13 +222,13 @@ func Test_getStepValue(t *testing.T) {
 }
 
 func Test_commandManager_precisionSearchInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) {
+	f := func(internalC dto.InternalContextIface) int {
 		panic("exit")
 	}
 
-	c1 := NewCommand("exit", f)
-	c2 := NewCommand("dobus", f)
-	c3 := NewCommand("gettalk", f)
+	c1 := NewCommand("exit", f, true)
+	c2 := NewCommand("dobus", f, true)
+	c3 := NewCommand("gettalk", f, true)
 
 	type fields struct {
 		data []dto.CommandIface
@@ -358,9 +358,10 @@ func Test_searchResult_GetPattern(t *testing.T) {
 
 func NewExitCommand() *Command {
 	return NewCommand("exit",
-		func(internalC dto.InternalContextIface) {
+		func(internalC dto.InternalContextIface) int {
 			internalC.GetErrChan() <- errors.New("ash exiting")
-		})
+			return 0
+		}, true)
 }
 
 func Test_searchResult_GetCommands(t *testing.T) {
@@ -414,7 +415,7 @@ func Test_searchResult_Founded(t *testing.T) {
 			name: "1",
 			fields: fields{
 				name:         "1",
-				commandsData: []dto.CommandIface{NewCommand("asd", nil)},
+				commandsData: []dto.CommandIface{NewCommand("asd", nil, true)},
 				patternValue: nil,
 			},
 			want: 1,

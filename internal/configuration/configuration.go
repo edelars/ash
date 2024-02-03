@@ -78,7 +78,7 @@ func NewConfigLoader() ConfigLoader {
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
-		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
+		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
 		Prompt:      "ASH> ",
 		Colors: Colors{DefaultText: 0, DefaultBackground: 0, Autocomplete: Autocomplete{
 			SourceText:       1,

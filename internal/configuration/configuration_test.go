@@ -50,7 +50,7 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 		{
 			name: "defaults",
 			want: ConfigLoader{
-				Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":Backspace"}},
+				Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
 				Prompt:      "ASH> ",
 				Colors: Colors{
 					Autocomplete: Autocomplete{

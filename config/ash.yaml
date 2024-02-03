@@ -6,7 +6,7 @@ keybindings:
   - key: 55
     action: ':Exit'
   - key: 127
-    action: ':Backspace'
+    action: ':RemoveLeftSymbol'
   - key: 167
     action: ':Close'
 

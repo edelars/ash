@@ -34,7 +34,6 @@ patternLoop:
 			}
 		}
 	}
-	println(len(kb.bindings))
 	return kb
 }
 
