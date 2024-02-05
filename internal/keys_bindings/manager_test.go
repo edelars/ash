@@ -14,7 +14,7 @@ func TestNewKeyBindingsManager(t *testing.T) {
 	cl := confLoaderImpl{}
 	cr := commRouterImpl{}
 
-	kb := NewKeyBindingsManager(&cl, cr)
+	kb := NewKeyBindingsManager(nil, &cl, cr)
 
 	assert.Equal(t, 2, len(kb.bindings))
 	assert.Equal(t, ":exec", kb.bindings[13].GetName())
@@ -54,7 +54,7 @@ type s struct {
 
 type commRouterImpl struct{}
 
-func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r commRouterImpl) SearchCommands(_ dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	res := commands.NewCommandRouterSearchResult()
 	p := commands.NewPattern(":exec", true)
 	res.AddResult(&searchResult{

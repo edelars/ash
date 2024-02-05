@@ -136,7 +136,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 			args: args{
 				internalC: internal_context.InternalContext{}.WithCurrentInputBuffer([]rune("get asd | put 456")),
 			},
-			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil, true).WithArgs("asd"), commands.NewCommand("put", nil, true).WithArgs("456")}),
+			want:    internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("get", nil, true).WithArgs([]string{"asd"}), commands.NewCommand("put", nil, true).WithArgs([]string{"456"})}),
 			wantErr: false,
 		},
 		{
@@ -182,7 +182,7 @@ func TestCommandExecutor_prepareExecutionList(t *testing.T) {
 
 type commRouterImpl struct{}
 
-func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r commRouterImpl) SearchCommands(_ dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	res := commands.NewCommandRouterSearchResult()
 
 	res.AddResult(&searchResult{
@@ -200,14 +200,14 @@ func (r commRouterImpl) SearchCommands(patterns ...dto.PatternIface) dto.Command
 
 type commRouterImpl2 struct{}
 
-func (r commRouterImpl2) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r commRouterImpl2) SearchCommands(_ dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	res := commands.NewCommandRouterSearchResult()
 	return res
 }
 
 type commRouterImpl3 struct{}
 
-func (r commRouterImpl3) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r commRouterImpl3) SearchCommands(_ dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	res := commands.NewCommandRouterSearchResult()
 
 	res.AddResult(&searchResult{
@@ -249,7 +249,7 @@ func TestCommandExecutor_Execute(t *testing.T) {
 	cr := commRouterImpl{}
 	kb := keyBinderImpl{}
 	ce := NewCommandExecutor(cr, &kb)
-	ic := internal_context.NewInternalContext(context.Background(), nil, nil, func(msg string) {}).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
+	ic := internal_context.NewInternalContext(context.Background(), nil, nil, func(msg string) {}, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
 	ce.Execute(ic)
 	assert.Equal(t, true, kb.Success)
 	assert.Equal(t, 0, len(ic.GetExecutionList()))
@@ -261,10 +261,50 @@ type keyBinderImpl struct {
 
 func (kb *keyBinderImpl) GetCommandByKey(key uint16) dto.CommandIface {
 	if key == 13 {
-		return commands.NewCommand("get", func(_ dto.InternalContextIface) int {
+		return commands.NewCommand("get", func(_ dto.InternalContextIface, _ []string) int {
 			kb.Success = true
 			return 0
 		}, true)
 	}
 	return nil
+}
+
+func Test_splitArgsStringToArr(t *testing.T) {
+	type args struct {
+		a string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantRes []string
+	}{
+		{
+			name: "1",
+			args: args{
+				a: " -l  -a ",
+			},
+			wantRes: []string{"-l", "-a"},
+		},
+		{
+			name: "2",
+			args: args{
+				a: "",
+			},
+			wantRes: nil,
+		},
+		{
+			name: "3",
+			args: args{
+				a: "la-aa",
+			},
+			wantRes: []string{"la-aa"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotRes := splitArgsStringToArr(tt.args.a); !reflect.DeepEqual(gotRes, tt.wantRes) {
+				t.Errorf("splitArgsStringToArr() = %v, want %v", gotRes, tt.wantRes)
+			}
+		})
+	}
 }

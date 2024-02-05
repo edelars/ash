@@ -7,11 +7,11 @@ import (
 
 func NewRemoveLeftSymbol(deleteLeftSymbolAndMoveCursor func(), DeleteLastSymbolFromCurrentBuffer func() error) *commands.Command {
 	return commands.NewCommand(":RemoveLeftSymbol",
-		func(_ dto.InternalContextIface) int {
+		func(_ dto.InternalContextIface, _ []string) int {
 			if err := DeleteLastSymbolFromCurrentBuffer(); err == nil {
 				deleteLeftSymbolAndMoveCursor()
 			}
-			return -1
+			return -2
 		},
 		false)
 }

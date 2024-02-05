@@ -3,6 +3,7 @@ package io_manager
 import (
 	"context"
 	"errors"
+	"io"
 
 	"ash/internal/commands"
 	"ash/internal/io_manager/list"
@@ -25,12 +26,55 @@ type inputManager struct {
 	defaultForegroundColor termbox.Attribute
 }
 
+func (i *inputManager) Read(p []byte) (n int, err error) {
+	select {
+	case ev := <-i.inputEventChan:
+		switch ev.Type {
+		case termbox.EventKey:
+			if ev.Ch != 0 {
+				n = copy(p, []byte{byte(ev.Ch)})
+			} else {
+				n = copy(p, []byte{byte(ev.Key)})
+			}
+			return n, nil
+		}
+		return 0, io.EOF
+	default:
+		return 0, io.EOF
+	}
+}
+
+func (i *inputManager) Write(p []byte) (n int, err error) {
+	for _, r := range []rune(string(p)) {
+		if r == rune('\r') {
+			continue
+		}
+		if r == rune('\t') {
+			i.cursorX += 8
+			continue
+		}
+
+		if r == rune('\n') {
+			w, h := termbox.Size()
+			i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
+			i.cursorX = 0
+			i.cursorY = h - 1
+			continue
+		}
+		termbox.SetCell(i.cursorX, i.cursorY, r, i.defaultForegroundColor, i.defaultBackgroundColor)
+		i.cursorX++
+
+	}
+	termbox.Flush()
+	return len(p), nil
+}
+
 func (i *inputManager) Init() error {
 	err := termbox.Init()
 	if err != nil {
 		return err
 	}
-	termbox.SetInputMode(termbox.InputEsc)
+	termbox.SetInputMode(termbox.InputMouse)
 	return nil
 }
 
@@ -45,7 +89,11 @@ func (i *inputManager) Start(ctx context.Context) error {
 			return ctx.Err()
 		}
 		switch ev := termbox.PollEvent(); ev.Type {
-
+		case termbox.EventResize:
+			termbox.Sync()
+			// termbox.Flush()
+		case termbox.EventMouse:
+			termbox.Flush()
 		case termbox.EventError:
 			return ev.Err
 		case termbox.EventInterrupt:

@@ -9,7 +9,7 @@ type KeyBindingsManager struct {
 	bindings map[uint16]dto.CommandIface
 }
 
-func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter commandRouterIface) KeyBindingsManager {
+func NewKeyBindingsManager(iContext dto.InternalContextIface, configLoader configLoaderIface, commandRouter commandRouterIface) KeyBindingsManager {
 	kb := KeyBindingsManager{bindings: make(map[uint16]dto.CommandIface)}
 
 	var patterns []dto.PatternIface
@@ -20,7 +20,7 @@ func NewKeyBindingsManager(configLoader configLoaderIface, commandRouter command
 		patterns = append(patterns, commands.NewPattern(kb.Action, true))
 		m[kb.Action] = kb.Key
 	}
-	sr := commandRouter.SearchCommands(patterns...)
+	sr := commandRouter.SearchCommands(iContext, patterns...)
 patternLoop:
 	for _, pattern := range patterns {
 		cmsr := sr.GetDataByPattern(pattern)
@@ -45,7 +45,7 @@ type (
 		}
 	}
 	commandRouterIface interface {
-		SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult
+		SearchCommands(iContext dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult
 	}
 )
 

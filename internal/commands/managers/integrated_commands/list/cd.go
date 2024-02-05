@@ -9,10 +9,10 @@ import (
 
 func NewCDCommand() *commands.Command {
 	return commands.NewCommand("cd",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, args []string) int {
 			el := internalC.GetExecutionList()
-			if len(el) == 1 {
-				os.Chdir(el[0].GetArgs())
+			if len(el) == 1 && len(args) == 1 {
+				os.Chdir(args[0])
 			}
 			return 0
 		}, true)

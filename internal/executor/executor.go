@@ -30,13 +30,14 @@ func (r commandExecutor) Execute(iContext dto.InternalContextIface) int {
 	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(iContext.GetLastKeyPressed())); mainCommand != nil {
 		var err error
 		if mainCommand.MustPrepareExecutionList() {
+			iContext.GetPrintFunction()("\n")
 			if iContext, err = r.prepareExecutionList(iContext); err != nil {
-				iContext.GetPrintFunction()(fmt.Sprintf("\nError execute: %s", err.Error()))
+				iContext.GetPrintFunction()(fmt.Sprintf("Error execute: %s\n", err.Error()))
 			}
 		}
-		return mainCommand.GetExecFunc()(iContext)
+		return mainCommand.GetExecFunc()(iContext, mainCommand.GetArgs())
 	} else {
-		iContext.GetPrintFunction()(fmt.Sprintf("\nError, unknown key: %d", iContext.GetLastKeyPressed()))
+		// iContext.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", iContext.GetLastKeyPressed()))
 	}
 	return 0
 }
@@ -45,20 +46,20 @@ func (r commandExecutor) prepareExecutionList(iContext dto.InternalContextIface)
 	var executionList []dto.CommandIface
 
 	pattrensArr, argsArr := splitToArrays(string(iContext.GetCurrentInputBuffer()))
-	crsr := r.commandRouter.SearchCommands(pattrensArr...)
+	crsr := r.commandRouter.SearchCommands(iContext, pattrensArr...)
 	for counter, pattern := range pattrensArr {
 		cmsr := crsr.GetDataByPattern(pattern)
 		switch len(cmsr) {
 		case 1:
 			commands := cmsr[0].GetCommands()
 			if len(commands) != 1 {
-				return iContext, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+				return iContext, fmt.Errorf("%w : %s commands: %d", errTooManyCmdFounds, pattern.GetPattern(), len(commands))
 			}
-			executionList = append(executionList, commands[0].WithArgs(argsArr[counter]))
+			executionList = append(executionList, commands[0].WithArgs(splitArgsStringToArr(argsArr[counter])))
 		case 0:
 			return iContext, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
 		default:
-			return iContext, fmt.Errorf("%w : %s", errTooManyCmdFounds, pattern.GetPattern())
+			return iContext, fmt.Errorf("%w : %s source: %d", errTooManyCmdFounds, pattern.GetPattern(), len(cmsr))
 		}
 	}
 
@@ -66,7 +67,7 @@ func (r commandExecutor) prepareExecutionList(iContext dto.InternalContextIface)
 }
 
 type routerIface interface {
-	SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult
+	SearchCommands(iContext dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult
 }
 
 type keyBindingsIface interface {
@@ -86,4 +87,14 @@ func splitToArrays(s string) (res []dto.PatternIface, args []string) {
 		args = append(args, strings.TrimSpace(arg))
 	}
 	return res, args
+}
+
+// "-l -a" to {"-l","-a"}
+func splitArgsStringToArr(a string) (res []string) {
+	for _, a := range strings.Split(a, " ") {
+		if a = strings.TrimSpace(a); a != "" {
+			res = append(res, a)
+		}
+	}
+	return res
 }

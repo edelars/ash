@@ -17,7 +17,7 @@ func (r *commandRouter) AddNewCommandManager(newCommandManager CommandManagerIfa
 	r.commandManagers = append(r.commandManagers, newCommandManager)
 }
 
-func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
+func (r *commandRouter) SearchCommands(iContext dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	var wg sync.WaitGroup
 	res := NewCommandRouterSearchResult()
 	resultChan := make(chan dto.CommandManagerSearchResult, r.getCommandManagerCount())
@@ -34,7 +34,7 @@ func (r *commandRouter) SearchCommands(patterns ...dto.PatternIface) dto.Command
 		}
 	}()
 	for _, cm := range r.commandManagers {
-		go cm.SearchCommands(resultChan, patterns...)
+		go cm.SearchCommands(iContext, resultChan, patterns...)
 	}
 
 	wg.Wait()
@@ -46,9 +46,9 @@ func (r *commandRouter) getCommandManagerCount() int {
 	return len(r.commandManagers)
 }
 
-func (r *commandRouter) GetSearchFunc() func(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
-	return func(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
-		return r.SearchCommands(pattern).GetDataByPattern(pattern)
+func (r *commandRouter) GetSearchFunc() func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+	return func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+		return r.SearchCommands(iContext, pattern).GetDataByPattern(pattern)
 	}
 }
 
@@ -65,7 +65,7 @@ func NewCommandRouter(commandManagers ...CommandManagerIface) commandRouter {
 }
 
 type CommandManagerIface interface {
-	SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface)
+	SearchCommands(iContext dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface)
 }
 
 func NewCommandRouterSearchResult() *commandRouterSearchResult {

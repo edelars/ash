@@ -23,7 +23,7 @@ func NewCommandPrompt(template string) CommandPrompt {
 }
 
 func (c *CommandPrompt) getPrompt() string {
-	return fmt.Sprintf("\n%s", c.template)
+	return fmt.Sprintf("%s", c.template)
 }
 
 // Delete rune from user currentBuffer if possible. If not will be error
@@ -61,9 +61,11 @@ mainLoop:
 				if ev.Ch != 0 {
 					c.currentBuffer = append(c.currentBuffer, ev.Ch)
 					iContext.GetPrintFunction()(string(ev.Ch))
-
+				} else if ev.Key == 32 {
+					c.currentBuffer = append(c.currentBuffer, rune(' '))
+					iContext.GetPrintFunction()(" ")
 				} else {
-					if res := exec.Execute(iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)); res >= 0 {
+					if res := exec.Execute(iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)); res >= -1 {
 						c.currentBuffer = nil
 						promptChan <- struct{}{}
 					}

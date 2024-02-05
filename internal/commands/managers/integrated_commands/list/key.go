@@ -11,7 +11,7 @@ import (
 
 func NewKeyCommand() *commands.Command {
 	return commands.NewCommand("_key",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, _ []string) int {
 			internalC.GetPrintFunction()("press Enter (13) key to break\n")
 			for {
 				ev := <-internalC.GetInputEventChan()

@@ -10,9 +10,9 @@ import (
 
 func NewConfigCommand(cfg CfgManager) *commands.Command {
 	return commands.NewCommand("_config",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, _ []string) int {
 			output, _ := json.MarshalIndent(cfg.GetConfig(), "", "\t")
-			internalC.GetPrintFunction()(fmt.Sprintf("%s", output))
+			internalC.GetPrintFunction()(fmt.Sprintf("%s\n", output))
 			return 0
 		}, true)
 }

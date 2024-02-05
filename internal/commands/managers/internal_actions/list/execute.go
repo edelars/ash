@@ -1,16 +1,125 @@
 package list
 
 import (
+	"bytes"
+	"io"
+	"sync"
+
 	"ash/internal/commands"
 	"ash/internal/dto"
 )
 
 func NewExecuteCommand() *commands.Command {
 	return commands.NewCommand(":Execute",
-		func(internalC dto.InternalContextIface) int {
-			for _, cmd := range internalC.GetExecutionList() {
-				cmd.GetExecFunc()(internalC)
+		func(iContext dto.InternalContextIface, _ []string) int {
+			var lastReaderPipe *io.PipeReader
+			var wg sync.WaitGroup
+			var readerPipe1, readerPipe2 *io.PipeReader
+			var writerPipe1, writerPipe2 *io.PipeWriter
+			readerPipe1, writerPipe1 = io.Pipe()
+
+			lastReaderPipe = readerPipe1
+
+			b := true
+
+			doneChan := make(chan struct{}, 1)
+
+			returnChan := make(chan struct{})
+
+			cmds := iContext.GetExecutionList()
+			resChan := make(chan stResult, len(cmds))
+
+			wg.Add(len(cmds))
+			go func() {
+				wg.Wait()
+				returnChan <- struct{}{}
+			}()
+
+			for i := 0; i < len(cmds); i++ {
+				if i == len(cmds)-1 { // last one
+					doneChan <- struct{}{}
+				}
+				if i == 0 {
+					go func(it int) {
+						resChan <- execCmd(iContext, iContext.GetInputReader(), writerPipe1, cmds[it])
+						wg.Done()
+					}(i)
+				} else {
+					if b {
+						readerPipe2, writerPipe2 = io.Pipe()
+						lastReaderPipe = readerPipe2
+
+						go func(it int) {
+							resChan <- execCmd(iContext, readerPipe1, writerPipe2, cmds[it])
+							wg.Done()
+						}(i)
+					} else {
+						readerPipe1, writerPipe1 = io.Pipe()
+						lastReaderPipe = readerPipe1
+
+						go func(it int) {
+							resChan <- execCmd(iContext, readerPipe2, writerPipe1, cmds[it])
+							wg.Done()
+						}(i)
+					}
+					b = !b
+				}
 			}
-			return 0 // TODO
+
+			var res int
+
+			var doneBuf []byte
+			defer func() {
+				if res == 0 {
+					iContext.GetOutputWriter().Write(doneBuf)
+				}
+				close(resChan)
+				close(returnChan)
+				close(doneChan)
+			}()
+
+			for {
+				select {
+				case st := <-resChan:
+					if st.code > 0 {
+						iContext.GetOutputWriter().Write(st.output)
+						res = st.code
+					}
+					// wg.Done()
+				case <-returnChan:
+					return res
+				case <-doneChan:
+					buf := make([]byte, 1024)
+					for {
+						n, err := lastReaderPipe.Read(buf)
+						if err == io.EOF {
+							break
+						}
+						doneBuf = buf[:n]
+					}
+
+				}
+			}
 		}, true)
+}
+
+func execCmd(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, cmd dto.CommandIface) (st stResult) {
+	var b []byte
+	secondWriter := bytes.NewBuffer(b)
+	mWriter := io.MultiWriter(secondWriter, w)
+	newIC := iContext.WithInputReader(r).WithOutputWriter(mWriter)
+	st.code = cmd.GetExecFunc()(newIC, cmd.GetArgs())
+	if st.code > 0 {
+		// panic(len(b))
+		st.output = secondWriter.Bytes()
+	}
+	w.Close()
+	iContext.GetPrintFunction()("res\n")
+
+	return
+}
+
+type stResult struct {
+	code   int
+	output []byte
 }

@@ -11,20 +11,20 @@ import (
 )
 
 func Test_commandManager_SearchCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) int {
+	f := func(internalC dto.InternalContextIface, _ []string) int {
 		panic("exit")
 	}
 	c1 := NewCommand("exit", f, true)
 	c2 := NewCommand("dobus", f, true)
 	c3 := NewCommand("999", f, true)
 
-	im := commandManager{data: []dto.CommandIface{c1, c2, c3}}
+	im := CommandManager{data: []dto.CommandIface{c1, c2, c3}}
 	ch := make(chan dto.CommandManagerSearchResult, 3)
 	defer close(ch)
 	p1 := NewPattern("ext", false)
 	p2 := NewPattern("dobus", false)
 
-	im.SearchCommands(ch, p1, p2)
+	im.SearchCommands(nil, ch, p1, p2)
 	res := <-ch
 	assert.Equal(t, 1, len(res.GetCommands()))
 	assert.Equal(t, "exit", res.GetCommands()[0].GetName())
@@ -35,7 +35,7 @@ func Test_commandManager_SearchCommands(t *testing.T) {
 }
 
 func Test_commandManager_searchPatternInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) int {
+	f := func(internalC dto.InternalContextIface, _ []string) int {
 		panic("exit")
 	}
 	c1 := NewCommand("exit", f, true)
@@ -150,7 +150,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := commandManager{
+			m := CommandManager{
 				data: tt.fields.data,
 			}
 			if got := m.searchPatternInCommands(tt.args.searchPattern); !reflect.DeepEqual(got, tt.want) {
@@ -222,7 +222,7 @@ func Test_getStepValue(t *testing.T) {
 }
 
 func Test_commandManager_precisionSearchInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface) int {
+	f := func(internalC dto.InternalContextIface, _ []string) int {
 		panic("exit")
 	}
 
@@ -276,7 +276,7 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := commandManager{
+			m := CommandManager{
 				data: tt.fields.data,
 			}
 			if got := m.precisionSearchInCommands(tt.args.searchName); !reflect.DeepEqual(got, tt.want) {
@@ -358,7 +358,7 @@ func Test_searchResult_GetPattern(t *testing.T) {
 
 func NewExitCommand() *Command {
 	return NewCommand("exit",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, _ []string) int {
 			internalC.GetErrChan() <- errors.New("ash exiting")
 			return 0
 		}, true)

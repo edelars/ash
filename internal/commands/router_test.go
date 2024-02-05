@@ -72,11 +72,11 @@ func (commandimpl CommandImpl) GetMathWeight() int8 {
 	return commandimpl.W
 }
 
-func (commandimpl CommandImpl) WithArgs(args string) dto.CommandIface {
+func (commandimpl CommandImpl) WithArgs(args []string) dto.CommandIface {
 	panic("not implemented")
 }
 
-func (commandimpl CommandImpl) GetArgs() string {
+func (commandimpl CommandImpl) GetArgs() []string {
 	panic("not implemented")
 }
 
@@ -86,7 +86,7 @@ func (commandimpl CommandImpl) MustPrepareExecutionList() bool {
 
 type CommandManagerImpl struct{}
 
-func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+func (commandmanagerimpl CommandManagerImpl) SearchCommands(iContext dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	c := CommandImpl{W: 44}
 	resultChan <- ManagerSearchResultImpl{
 		Source:   "2",
@@ -97,7 +97,7 @@ func (commandmanagerimpl CommandManagerImpl) SearchCommands(resultChan chan dto.
 
 type CommandManagerImpl2 struct{}
 
-func (commandmanagerimpl CommandManagerImpl2) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+func (commandmanagerimpl CommandManagerImpl2) SearchCommands(iContext dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	resultChan <- ManagerSearchResultImpl{
 		Source:   "3",
 		Commands: []dto.CommandIface{},
@@ -109,7 +109,7 @@ func TestCommandRouter_SearchCommands(t *testing.T) {
 	cr := commands.NewCommandRouter(CommandManagerImpl{}, CommandManagerImpl2{})
 	p1 := commands.NewPattern("123", false)
 
-	r := cr.SearchCommands(p1)
+	r := cr.SearchCommands(nil, p1)
 	cc := r.GetDataByPattern(p1)
 
 	for _, v := range cc {

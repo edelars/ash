@@ -4,12 +4,12 @@ import (
 	"ash/internal/dto"
 )
 
-type commandManager struct {
+type CommandManager struct {
 	mainName string
 	data     []dto.CommandIface
 }
 
-func (m commandManager) SearchCommands(resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
+func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	for _, pattern := range patterns {
 		var founded foundedData
 
@@ -31,7 +31,10 @@ func (m commandManager) SearchCommands(resultChan chan dto.CommandManagerSearchR
 	}
 }
 
-func NewCommandManager(mainName string, cmds ...dto.CommandIface) (cm commandManager) {
+func (m CommandManager) AddCommands(cmds ...dto.CommandIface) {
+}
+
+func NewCommandManager(mainName string, cmds ...dto.CommandIface) (cm CommandManager) {
 	cm.data = append(cm.data, cmds...)
 	cm.mainName = mainName
 	return cm
@@ -46,7 +49,7 @@ type foundedData map[dto.CommandIface]int8
 // cd - cd = 100%
 // cd - vv = 0%
 // cd - cc = 50%
-func (m commandManager) searchPatternInCommands(searchPattern string) foundedData {
+func (m CommandManager) searchPatternInCommands(searchPattern string) foundedData {
 	searchPatternRunes := []rune(searchPattern)
 	founded := make(foundedData)
 
@@ -86,7 +89,7 @@ func getStepValue(s string) int8 {
 	return int8(100 / runeCount)
 }
 
-func (m commandManager) precisionSearchInCommands(searchName string) foundedData {
+func (m CommandManager) precisionSearchInCommands(searchName string) foundedData {
 	founded := make(foundedData)
 	for _, cmd := range m.data {
 		if cmd.GetName() == searchName {

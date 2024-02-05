@@ -10,6 +10,7 @@ import (
 
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
+	"ash/internal/commands/managers/file_system"
 	integrated "ash/internal/commands/managers/integrated_commands"
 	"ash/internal/commands/managers/internal_actions"
 	"ash/internal/configuration"
@@ -50,13 +51,14 @@ func main() {
 
 	// managers init
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
-	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager())
+	filesystemManager := file_system.NewFileSystemManager()
+	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
 	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc())
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
-	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs, inputManager.GetPrintFunction())
-	keyBindingsManager := keys_bindings.NewKeyBindingsManager(cfg, &commandRouter)
+	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs, inputManager.GetPrintFunction(), inputManager, inputManager)
+	keyBindingsManager := keys_bindings.NewKeyBindingsManager(internalContext, cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
 
 	wg.Add(1)

@@ -10,13 +10,13 @@ import (
 
 func NewExportCommand() *commands.Command {
 	return commands.NewCommand("export",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, args []string) int {
 			el := internalC.GetExecutionList()
-			if len(el) == 1 {
-				if a, b, err := envs_loader.ParseEnvString(el[0].GetArgs()); err == nil {
+			if len(el) == 1 && len(args) == 1 {
+				if a, b, err := envs_loader.ParseEnvString(args[0]); err == nil {
 					os.Setenv(a, b)
 				} else {
-					internalC.GetPrintFunction()("Fail to set ENV: " + el[0].GetArgs())
+					internalC.GetPrintFunction()("Fail to set ENV: " + args[0])
 				}
 			}
 			return 0

@@ -41,11 +41,11 @@ func (commandimpl *commandImpl) GetExecFunc() dto.ExecF {
 	panic("not implemented") // TODO: Implement
 }
 
-func (commandimpl *commandImpl) WithArgs(args string) dto.CommandIface {
+func (commandimpl *commandImpl) WithArgs(args []string) dto.CommandIface {
 	panic("not implemented") // TODO: Implement
 }
 
-func (commandimpl *commandImpl) GetArgs() string {
+func (commandimpl *commandImpl) GetArgs() []string {
 	panic("not implemented") // TODO: Implement
 }
 

@@ -8,23 +8,23 @@ import (
 	"ash/internal/pseudo_graphics/windows/selection_window"
 )
 
-func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(pattern dto.PatternIface) []dto.CommandManagerSearchResult) *commands.Command {
+func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult) *commands.Command {
 	return commands.NewCommand(":Autocomplete",
-		func(internalC dto.InternalContextIface) int {
+		func(iContext dto.InternalContextIface, _ []string) int {
 			doneChan := make(chan struct{}, 1)
 			defer close(doneChan)
 
 			sFunc := func(pattern []rune) dto.DataSource {
 				p := commands.NewPattern(string(pattern), false)
-				return data_source.NewDataSource(searchFunc(p))
+				return data_source.NewDataSource(searchFunc(iContext, p))
 			}
-			rFunc := func(cmd dto.CommandIface, userInput []rune) {
+			rFunc := func(cmd dto.CommandIface, _ []rune) {
 				doneChan <- struct{}{}
-				internalC.GetPrintFunction()(" selected: " + cmd.GetName())
+				iContext.GetPrintFunction()(" selected: " + cmd.GetName())
 			}
 
-			pWindow := selection_window.NewSelectionWindow(internalC.GetCurrentInputBuffer(), sFunc, rFunc)
-			dr.Draw(&pWindow, internalC, doneChan)
+			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc)
+			dr.Draw(&pWindow, iContext, doneChan)
 			return -1
 		}, false)
 }

@@ -9,7 +9,7 @@ import (
 
 func NewLogoutCommand() *commands.Command {
 	return commands.NewCommand("logout",
-		func(internalC dto.InternalContextIface) int {
+		func(internalC dto.InternalContextIface, _ []string) int {
 			internalC.GetErrChan() <- errors.New("ash exiting")
 			return 0
 		}, true)

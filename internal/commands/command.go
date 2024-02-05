@@ -14,7 +14,7 @@ type Command struct {
 	weight                   int8
 	execFunc                 dto.ExecF
 	name                     string
-	args                     string
+	args                     []string
 	mustPrepareExecutionList bool
 }
 
@@ -34,13 +34,13 @@ func (c *Command) GetName() string {
 	return c.name
 }
 
-func (c *Command) WithArgs(args string) dto.CommandIface {
+func (c *Command) WithArgs(args []string) dto.CommandIface {
 	res := *c
 	res.args = args
 	return &res
 }
 
-func (c *Command) GetArgs() string {
+func (c *Command) GetArgs() []string {
 	return c.args
 }
 

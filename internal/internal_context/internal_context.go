@@ -2,6 +2,8 @@ package internal_context
 
 import (
 	"context"
+	"io"
+	"os"
 
 	"ash/internal/dto"
 
@@ -16,17 +18,32 @@ type InternalContext struct {
 	currentInputBuffer []rune
 	executionList      []dto.CommandIface
 	printFunc          func(msg string)
+	outputWriter       io.Writer
+	inputReader        io.Reader
 }
+
+func (i InternalContext) WithOutputWriter(w io.Writer) dto.InternalContextIface {
+	i.outputWriter = w
+	return i
+}
+
+func (i InternalContext) WithInputReader(r io.Reader) dto.InternalContextIface {
+	i.inputReader = r
+	return i
+}
+
 type inputManager interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string)) InternalContext {
-	return InternalContext{
-		ctx:       ctx,
-		im:        im,
-		errs:      errs,
-		printFunc: printFunc,
+func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader) *InternalContext {
+	return &InternalContext{
+		ctx:          ctx,
+		im:           im,
+		errs:         errs,
+		printFunc:    printFunc,
+		outputWriter: outputWriter,
+		inputReader:  inputReader,
 	}
 }
 
@@ -35,11 +52,12 @@ func (i InternalContext) GetEnvList() []string {
 }
 
 func (i InternalContext) GetEnv(envName string) string {
-	panic("not implemented") // TODO: Implement
+	return os.Getenv(envName)
 }
 
 func (i InternalContext) GetCurrentDir() string {
-	panic("not implemented") // TODO: Implement
+	s, _ := os.Getwd()
+	return s
 }
 
 func (i InternalContext) WithLastKeyPressed(b byte) dto.InternalContextIface {
@@ -83,4 +101,12 @@ func (i InternalContext) GetPrintFunction() func(msg string) {
 
 func (i InternalContext) GetInputEventChan() chan termbox.Event {
 	return i.im.GetInputEventChan()
+}
+
+func (i InternalContext) GetOutputWriter() io.Writer {
+	return i.outputWriter
+}
+
+func (i InternalContext) GetInputReader() io.Reader {
+	return i.inputReader
 }
