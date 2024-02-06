@@ -57,6 +57,10 @@ func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.Dat
 	return sw
 }
 
+func (sw *selectionWindow) Close() {
+	sw.resultFunc(nil, sw.currentInput)
+}
+
 func (sw *selectionWindow) updateDataSource() {
 	sw.dataSources = sw.searchFunc(sw.currentInput)
 }

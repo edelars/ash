@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"ash/internal/dto"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type searchResult struct {
@@ -253,12 +255,12 @@ func Test_dataSourceImpl_generateRune(t *testing.T) {
 		want   rune
 	}{
 		{
-			name:   "a",
+			name:   "0",
 			fields: fields{},
 			args: args{
 				i: 0,
 			},
-			want: 97,
+			want: 48,
 		},
 		{
 			name:   "98",
@@ -274,7 +276,39 @@ func Test_dataSourceImpl_generateRune(t *testing.T) {
 			args: args{
 				i: 333,
 			},
+			want: 0,
+		},
+		{
+			name:   "57",
+			fields: fields{},
+			args: args{
+				i: 57,
+			},
 			want: 97,
+		},
+		{
+			name:   "122",
+			fields: fields{},
+			args: args{
+				i: 122,
+			},
+			want: 65,
+		},
+		{
+			name:   "67",
+			fields: fields{},
+			args: args{
+				i: 67,
+			},
+			want: 68,
+		},
+		{
+			name:   "A",
+			fields: fields{},
+			args: args{
+				i: 65,
+			},
+			want: 66,
 		},
 	}
 	for _, tt := range tests {
@@ -325,16 +359,16 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 				SourceName: "2",
 				Items: []dto.GetDataResultItem{{
 					Name:       "22",
-					ButtonRune: 'a',
+					ButtonRune: '0',
 				}},
 			}, {
 				SourceName: "3",
 				Items: []dto.GetDataResultItem{{
 					Name:       "33",
-					ButtonRune: 'b',
+					ButtonRune: '1',
 				}, {
 					Name:       "34",
-					ButtonRune: 'c',
+					ButtonRune: '2',
 				}},
 			}},
 		},
@@ -349,5 +383,25 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 				t.Errorf("dataSourceImpl.GetData() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_dataSourceImpl_GetCommand(t *testing.T) {
+	h := dataSourceImpl{keyMapping: make(map[rune]dto.CommandIface)}
+	h.originalData = []dto.CommandManagerSearchResult{&searchResult{
+		name: "1",
+	}, &searchResult{
+		name:         "2",
+		commandsData: []dto.CommandIface{&commandImpl{Name: "22"}},
+	}, &searchResult{
+		name:         "3",
+		commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11}, &commandImpl{Name: "33", Weight: 100}},
+	}}
+
+	res := h.GetData(12, 1)
+	for r := 0; r < len(res); r++ {
+		for i := 0; i < len(res[r].Items); i++ {
+			assert.Equal(t, res[r].Items[i].Name, h.GetCommand(res[r].Items[i].ButtonRune).GetName())
+		}
 	}
 }

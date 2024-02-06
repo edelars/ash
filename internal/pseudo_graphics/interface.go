@@ -11,6 +11,7 @@ type PWindow interface {
 	KeyInput(key rune)
 	ChangeFocus()
 	RemoveLastInput()
+	Close()
 }
 
 type InputManager interface {

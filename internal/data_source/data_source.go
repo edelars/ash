@@ -51,11 +51,30 @@ func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []
 }
 
 func (ds *dataSourceImpl) generateRune(i rune) rune {
-	if i > 96 && i < 122 {
+	if i < 47 {
+		return 48 // 0
+	}
+
+	if i > 47 && i < 57 { // 0 - 9
 		return i + 1
-	} else {
+	}
+
+	if i == 57 {
 		return 97
 	}
+
+	if i > 96 && i < 122 { // a - z
+		return i + 1
+	}
+
+	if i == 122 {
+		return 65
+	}
+
+	if i > 64 && i < 90 { // A - Z
+		return i + 1
+	}
+	return 0
 }
 
 func (ds *dataSourceImpl) initGetDataResult(avalaibleSpace, overheadLinesPerSource int) []dto.GetDataResult {

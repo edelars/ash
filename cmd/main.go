@@ -47,7 +47,7 @@ func main() {
 		errs <- inputManager.Start(ctx)
 	}()
 
-	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":Backspace"))
+	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":RemoveLeftSymbol"))
 
 	// managers init
 	intergratedManager := integrated.NewIntegratedManager(&cfg)

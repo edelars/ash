@@ -30,6 +30,10 @@ type CommandIface interface {
 
 type ExecF func(internalC InternalContextIface, args []string) int // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
 
+type CommandExecResult interface {
+	GetExitCode() int
+	GetResultUserInput() []rune
+}
 type PatternIface interface {
 	GetPattern() string
 	IsPrecisionSearch() bool

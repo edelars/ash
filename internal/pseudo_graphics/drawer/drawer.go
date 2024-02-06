@@ -51,7 +51,7 @@ func (d *Drawer) Draw(sw pseudo_graphics.PWindow, im pseudo_graphics.InputManage
 				case termbox.Key(d.keyEnter):
 					fallthrough // TODO Research data
 				case termbox.Key(d.keyClose):
-					return nil
+					sw.Close()
 				default:
 					if ev.Ch != 0 && unicode.IsPrint(ev.Ch) {
 						sw.KeyInput(ev.Ch) // output after select if success
