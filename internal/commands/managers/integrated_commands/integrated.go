@@ -7,7 +7,8 @@ import (
 
 func NewIntegratedManager(configManager list.CfgManager) (im commands.CommandManagerIface) {
 	return commands.NewCommandManager(
-		"internal",
+		"Internal commands",
+		8,
 		list.NewExitCommand(),
 		list.NewCDCommand(),
 		list.NewEchoCommand(),

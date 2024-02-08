@@ -14,6 +14,10 @@ type searchResult struct {
 	commandsData []dto.CommandIface
 }
 
+func (searchresult *searchResult) GetPriority() uint8 {
+	panic("not implemented") // TODO: Implement
+}
+
 func (searchresult *searchResult) GetSourceName() string {
 	return searchresult.name
 }
@@ -31,15 +35,24 @@ func (searchresult *searchResult) GetPattern() dto.PatternIface {
 }
 
 type commandImpl struct {
-	Weight int8
-	Name   string
+	Weight      uint8
+	Name        string
+	DispalyName string
 }
 
-func (commandimpl *commandImpl) SetMathWeight(weight int8) {
+func (commandimpl *commandImpl) GetDisplayName() string {
+	return commandimpl.DispalyName
+}
+
+func (commandimpl *commandImpl) SetDisplayName(displayName string) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (commandimpl *commandImpl) GetExecFunc() dto.ExecF {
+func (commandimpl *commandImpl) SetMathWeight(weight uint8) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (commandimpl *commandImpl) GetExecFunc() dto.ExecutionFunction {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -51,7 +64,7 @@ func (commandimpl *commandImpl) GetArgs() []string {
 	panic("not implemented") // TODO: Implement
 }
 
-func (commandImpl *commandImpl) GetMathWeight() int8 {
+func (commandImpl *commandImpl) GetMathWeight() uint8 {
 	return commandImpl.Weight
 }
 
@@ -348,7 +361,7 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 					commandsData: []dto.CommandIface{&commandImpl{Name: "22"}},
 				}, &searchResult{
 					name:         "3",
-					commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11}, &commandImpl{Name: "33", Weight: 100}},
+					commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11}, &commandImpl{Name: "33", Weight: 100}, &commandImpl{Name: "35", Weight: 90}},
 				}}, keyMapping: make(map[rune]dto.CommandIface),
 			},
 			args: args{
@@ -367,8 +380,11 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 					Name:       "33",
 					ButtonRune: '1',
 				}, {
-					Name:       "34",
+					Name:       "35",
 					ButtonRune: '2',
+				}, {
+					Name:       "34",
+					ButtonRune: '3',
 				}},
 			}},
 		},

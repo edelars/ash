@@ -69,6 +69,12 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (i *inputManager) Stop() {
+	termbox.Interrupt()
+	// termbox.Sync()
+	// termbox.Flush()
+}
+
 func (i *inputManager) Init() error {
 	err := termbox.Init()
 	if err != nil {
@@ -78,16 +84,16 @@ func (i *inputManager) Init() error {
 	return nil
 }
 
-func (i *inputManager) Start(ctx context.Context) error {
+func (i *inputManager) Start() error {
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
 	defer termbox.Close()
 	defer close(i.inputEventChan)
 	go i.listenOutputCellChan(ctx)
 
 	i.moveCursorAtStartPostion()
 	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventResize:
 			termbox.Sync()
@@ -194,7 +200,7 @@ func NewInputManager(pm promptManager) *inputManager {
 		defaultBackgroundColor: termbox.ColorDefault,
 		defaultForegroundColor: termbox.ColorDefault,
 	}
-	im.manager = commands.NewCommandManager(constManagerName,
+	im.manager = commands.NewCommandManager(constManagerName, 3,
 		list.NewRemoveLeftSymbol(im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)
 	return &im

@@ -5,6 +5,7 @@ import (
 )
 
 type CommandManager struct {
+	priority uint8 // for autocomplete sort
 	mainName string
 	data     []dto.CommandIface
 }
@@ -19,7 +20,8 @@ func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan ch
 			founded = m.searchPatternInCommands(pattern.GetPattern())
 		}
 		var arr []dto.CommandIface
-		for c := range founded {
+		for c, p := range founded {
+			c.SetMathWeight(p + c.GetMathWeight()) // plus basic init weight
 			arr = append(arr, c)
 		}
 
@@ -27,6 +29,7 @@ func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan ch
 			name:         m.mainName,
 			commandsData: arr,
 			patternValue: pattern,
+			priority:     m.priority,
 		}
 	}
 }
@@ -34,13 +37,14 @@ func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan ch
 func (m CommandManager) AddCommands(cmds ...dto.CommandIface) {
 }
 
-func NewCommandManager(mainName string, cmds ...dto.CommandIface) (cm CommandManager) {
+func NewCommandManager(mainName string, priority uint8, cmds ...dto.CommandIface) (cm CommandManager) {
 	cm.data = append(cm.data, cmds...)
 	cm.mainName = mainName
+	cm.priority = priority
 	return cm
 }
 
-type foundedData map[dto.CommandIface]int8
+type foundedData map[dto.CommandIface]uint8
 
 // Search pattern in commands:
 // [cmd] - [pattern] = [result %]
@@ -55,7 +59,7 @@ func (m CommandManager) searchPatternInCommands(searchPattern string) foundedDat
 
 	for _, cmd := range m.data {
 
-		percentCorrect := int8(100)
+		percentCorrect := uint8(100)
 		step := getStepValue(cmd.GetName())
 
 		cmdRunes := []rune(cmd.GetName())
@@ -71,22 +75,27 @@ func (m CommandManager) searchPatternInCommands(searchPattern string) foundedDat
 					continue patternLoop
 				}
 			}
-			percentCorrect = percentCorrect - step
+			if percentCorrect > step {
+				percentCorrect = percentCorrect - step
+			} else {
+				percentCorrect = 0
+			}
 		}
 
 		if percentCorrect > 0 && f {
 			founded[cmd] = percentCorrect
 		}
+
 	}
 	return founded
 }
 
-func getStepValue(s string) int8 {
+func getStepValue(s string) uint8 {
 	runeCount := len([]rune(s))
 	if runeCount == 0 {
 		return 0
 	}
-	return int8(100 / runeCount)
+	return uint8(100 / runeCount)
 }
 
 func (m CommandManager) precisionSearchInCommands(searchName string) foundedData {
@@ -103,6 +112,11 @@ type searchResult struct {
 	name         string
 	commandsData []dto.CommandIface
 	patternValue dto.PatternIface
+	priority     uint8
+}
+
+func (searchresult *searchResult) GetPriority() uint8 {
+	return searchresult.priority
 }
 
 func (searchresult *searchResult) GetSourceName() string {

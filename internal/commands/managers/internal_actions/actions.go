@@ -7,10 +7,11 @@ import (
 	"ash/internal/pseudo_graphics"
 )
 
-func NewInternalActionsManager(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult) (im commands.CommandManagerIface) {
+func NewInternalActionsManager(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, inputSet func(r []rune)) (im commands.CommandManagerIface) {
 	return commands.NewCommandManager(
-		"actions",
+		"Actions",
+		1,
 		list.NewExecuteCommand(),
-		list.NewAutocompleteCommand(dr, searchFunc),
+		list.NewAutocompleteCommand(dr, searchFunc, inputSet),
 	)
 }

@@ -227,6 +227,11 @@ type searchResult struct {
 	name         string
 	commandsData []dto.CommandIface
 	patternValue dto.PatternIface
+	priority     uint8
+}
+
+func (searchresult *searchResult) GetPriority() uint8 {
+	return searchresult.priority
 }
 
 func (searchresult *searchResult) GetSourceName() string {
@@ -250,9 +255,12 @@ func TestCommandExecutor_Execute(t *testing.T) {
 	kb := keyBinderImpl{}
 	ce := NewCommandExecutor(cr, &kb)
 	ic := internal_context.NewInternalContext(context.Background(), nil, nil, func(msg string) {}, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
-	ce.Execute(ic)
+
+	res := ce.Execute(ic)
 	assert.Equal(t, true, kb.Success)
 	assert.Equal(t, 0, len(ic.GetExecutionList()))
+
+	assert.Equal(t, dto.CommandExecResultMainExit, res)
 }
 
 type keyBinderImpl struct {
@@ -261,9 +269,9 @@ type keyBinderImpl struct {
 
 func (kb *keyBinderImpl) GetCommandByKey(key uint16) dto.CommandIface {
 	if key == 13 {
-		return commands.NewCommand("get", func(_ dto.InternalContextIface, _ []string) int {
+		return commands.NewCommand("get", func(_ dto.InternalContextIface, _ []string) dto.ExecResult {
 			kb.Success = true
-			return 0
+			return dto.CommandExecResultMainExit
 		}, true)
 	}
 	return nil

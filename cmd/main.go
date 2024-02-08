@@ -23,7 +23,9 @@ import (
 )
 
 func main() {
-	errs := make(chan error)
+	errs := make(chan error, 10)
+	defer close(errs)
+
 	go waitInterruptSignal(errs)
 
 	var wg sync.WaitGroup
@@ -43,17 +45,19 @@ func main() {
 		fmt.Println(err)
 	}
 
+	wg.Add(1)
 	go func() {
-		errs <- inputManager.Start(ctx)
+		defer wg.Done()
+		errs <- inputManager.Start()
 	}()
 
 	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":RemoveLeftSymbol"))
 
 	// managers init
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
-	filesystemManager := file_system.NewFileSystemManager()
+	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
 	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
-	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc())
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc())
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
@@ -64,15 +68,35 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- promptGenerator.Run(internalContext, exec, cfg)
+		errs <- promptGenerator.Run(internalContext, &exec, cfg)
 	}()
 
 	// waiting for stop or error xD
-	e := <-errs
-	internalContext.GetPrintFunction()(e.Error())
+
+	<-errs
+	go func() {
+		for range errs {
+		}
+	}()
 	cancelFunc()
 
+	// internalContext.GetPrintFunction()(err.Error())
+
+	// wg.Add(1)
+	// go func() {
+	// defer wg.Done()
+	promptGenerator.Stop()
+
+	// }()
+	// wg.Wait()
+	// wg.Add(1)
+	// go func() {
+	// defer wg.Done()
+	inputManager.Stop()
+	// }()
+
 	wg.Wait()
+	println("\ndone")
 }
 
 func waitInterruptSignal(errs chan<- error) {

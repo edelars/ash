@@ -2,7 +2,7 @@ package commands
 
 import "ash/internal/dto"
 
-func NewCommand(name string, execFunc dto.ExecF, mustPrepareExecutionList bool) *Command {
+func NewCommand(name string, execFunc dto.ExecutionFunction, mustPrepareExecutionList bool) *Command {
 	return &Command{
 		execFunc:                 execFunc,
 		name:                     name,
@@ -11,27 +11,39 @@ func NewCommand(name string, execFunc dto.ExecF, mustPrepareExecutionList bool) 
 }
 
 type Command struct {
-	weight                   int8
-	execFunc                 dto.ExecF
-	name                     string
-	args                     []string
 	mustPrepareExecutionList bool
+	weight                   uint8
+	execFunc                 dto.ExecutionFunction
+	name                     string
+	displayName              string
+	args                     []string
 }
 
-func (c *Command) GetMathWeight() int8 {
+func (c *Command) GetMathWeight() uint8 {
 	return c.weight
 }
 
-func (c *Command) SetMathWeight(weight int8) {
+func (c *Command) SetMathWeight(weight uint8) {
 	c.weight = weight
 }
 
-func (c *Command) GetExecFunc() dto.ExecF {
+func (c *Command) GetExecFunc() dto.ExecutionFunction {
 	return c.execFunc
 }
 
 func (c *Command) GetName() string {
 	return c.name
+}
+
+func (c *Command) GetDisplayName() string {
+	if c.displayName == "" {
+		return c.name
+	}
+	return c.displayName
+}
+
+func (c *Command) SetDisplayName(s string) {
+	c.displayName = s
 }
 
 func (c *Command) WithArgs(args []string) dto.CommandIface {

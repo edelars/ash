@@ -16,24 +16,41 @@ type CommandManagerSearchResult interface {
 	GetCommands() []CommandIface
 	GetPattern() PatternIface
 	Founded() int
+	GetPriority() uint8
 }
 
 type CommandIface interface {
-	GetMathWeight() int8 // 0-100%
-	SetMathWeight(weight int8)
-	GetExecFunc() ExecF
-	GetName() string
+	GetMathWeight() uint8 // 0-100%
+	SetMathWeight(weight uint8)
+	GetExecFunc() ExecutionFunction
+	GetName() string // execution name
 	WithArgs(args []string) CommandIface
 	GetArgs() []string
 	MustPrepareExecutionList() bool // current user input ready for exec and need to prepare exec list
+	GetDisplayName() string         // display name
+	SetDisplayName(displayName string)
 }
 
-type ExecF func(internalC InternalContextIface, args []string) int // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
+type ExecutionFunction func(internalC InternalContextIface, args []string) ExecResult // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
+
+type ExecResult int8
+
+// Result status of execution, default CommandExecResultStatusOk
+const (
+	CommandExecResultStatusOk = ExecResult(0)
+
+	CommandExecResultMainExit     = ExecResult(11) // ash is exiting
+	CommandExecResultNewUserInput = ExecResult(12) // put new user input
+	CommandExecResultNotDoAnyting = ExecResult(13)
+)
+
+// type ExecutionFunction func(internalC InternalContextIface, args []string) ExecResult // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
 
 type CommandExecResult interface {
 	GetExitCode() int
 	GetResultUserInput() []rune
 }
+
 type PatternIface interface {
 	GetPattern() string
 	IsPrecisionSearch() bool

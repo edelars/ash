@@ -180,7 +180,7 @@ func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
 	// draw items
 	for _, item := range data.Items {
 		tbprint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
-		tbprint(x+2, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : "+item.Name)
+		tbprint(x+2, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : "+item.DisplayName)
 		y++
 	}
 	return y

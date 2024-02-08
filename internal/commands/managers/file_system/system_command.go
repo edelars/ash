@@ -9,7 +9,7 @@ import (
 
 func NewSystemCommand(fileToExec string) *commands.Command {
 	return commands.NewCommand(fileToExec,
-		func(iContext dto.InternalContextIface, args []string) int {
+		func(iContext dto.InternalContextIface, args []string) dto.ExecResult {
 			ctx := iContext.GetCTX()
 			cmd := exec.CommandContext(ctx, fileToExec, args...)
 			cmd.Stdin = iContext.GetInputReader()
@@ -19,6 +19,6 @@ func NewSystemCommand(fileToExec string) *commands.Command {
 				// iContext.GetPrintFunction()(fmt.Sprintf("could not run command:%s :%s ", fileToExec, err.Error()))
 			}
 			// iContext.GetPrintFunction()(cmd.Path)
-			return cmd.ProcessState.ExitCode()
+			return dto.ExecResult(cmd.ProcessState.ExitCode())
 		}, true)
 }

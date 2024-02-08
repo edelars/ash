@@ -7,11 +7,13 @@ import (
 
 	"ash/internal/commands"
 	"ash/internal/dto"
+
+	"github.com/zenthangplus/goccm"
 )
 
 func NewExecuteCommand() *commands.Command {
 	return commands.NewCommand(":Execute",
-		func(iContext dto.InternalContextIface, _ []string) int {
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			return executeCommands(iContext, nil, execCmd)
 		}, true)
 }
@@ -22,7 +24,7 @@ func execCmd(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, c
 	mWriter := io.MultiWriter(secondWriter, w)
 	newIC := iContext.WithInputReader(r).WithOutputWriter(mWriter)
 	st.code = cmd.GetExecFunc()(newIC, cmd.GetArgs())
-	if st.code > 0 {
+	if st.code != dto.CommandExecResultStatusOk {
 		st.output = secondWriter.Bytes()
 	}
 	w.Close()
@@ -31,12 +33,18 @@ func execCmd(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, c
 }
 
 type stResult struct {
-	code   int
+	code   dto.ExecResult
 	output []byte
 }
 
-func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc func(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, cmd dto.CommandIface) stResult) int {
+func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc func(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, cmd dto.CommandIface) stResult) dto.ExecResult {
+	cmds := iContext.GetExecutionList()
+	if len(cmds) == 0 {
+		return dto.CommandExecResultStatusOk
+	}
 	var lastReaderPipe *io.PipeReader
+
+	ccm := goccm.New(2)
 	var wg sync.WaitGroup
 	var readerPipe1, readerPipe2 *io.PipeReader
 	var writerPipe1, writerPipe2 *io.PipeWriter
@@ -44,14 +52,49 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 
 	lastReaderPipe = readerPipe1
 
-	b := true
-
 	doneChan := make(chan struct{}, 1)
 
 	returnChan := make(chan struct{})
 
-	cmds := iContext.GetExecutionList()
 	resChan := make(chan stResult, len(cmds))
+
+	b := true
+	for i := 0; i < len(cmds); i++ {
+		ccm.Wait()
+
+		cmd := cmds[i]
+		if i == 0 {
+			go func() {
+				resChan <- execFunc(iContext, iContext.GetInputReader(), writerPipe1, cmd)
+				ccm.Done()
+			}()
+		} else {
+			switch b {
+			case true:
+				readerPipe2, writerPipe2 = io.Pipe()
+				lastReaderPipe = readerPipe2
+
+				go func() {
+					resChan <- execFunc(iContext, readerPipe1, writerPipe2, cmd)
+					ccm.Done()
+				}()
+			case false:
+				readerPipe1, writerPipe1 = io.Pipe()
+				lastReaderPipe = readerPipe1
+
+				go func() {
+					resChan <- execFunc(iContext, readerPipe2, writerPipe1, cmd)
+					ccm.Done()
+				}()
+			}
+			b = !b
+		}
+
+		if i == len(cmds)-1 { // last one, starting read from last goroutine
+			doneChan <- struct{}{}
+		}
+
+	}
 
 	wg.Add(len(cmds))
 	go func() {
@@ -59,42 +102,11 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 		returnChan <- struct{}{}
 	}()
 
-	for i := 0; i < len(cmds); i++ {
-		if i == len(cmds)-1 { // last one
-			doneChan <- struct{}{}
-		}
-		if i == 0 {
-			go func(it int) {
-				resChan <- execFunc(iContext, iContext.GetInputReader(), writerPipe1, cmds[it])
-				wg.Done()
-			}(i)
-		} else {
-			if b {
-				readerPipe2, writerPipe2 = io.Pipe()
-				lastReaderPipe = readerPipe2
-
-				go func(it int) {
-					resChan <- execFunc(iContext, readerPipe1, writerPipe2, cmds[it])
-					wg.Done()
-				}(i)
-			} else {
-				readerPipe1, writerPipe1 = io.Pipe()
-				lastReaderPipe = readerPipe1
-
-				go func(it int) {
-					resChan <- execFunc(iContext, readerPipe2, writerPipe1, cmds[it])
-					wg.Done()
-				}(i)
-			}
-			b = !b
-		}
-	}
-
-	var res int
-
+	res := dto.CommandExecResultStatusOk
 	var doneBuf []byte
+
 	defer func() {
-		if res == 0 {
+		if res == dto.CommandExecResultStatusOk {
 			iContext.GetOutputWriter().Write(doneBuf)
 		}
 		close(resChan)
@@ -105,18 +117,20 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 	for {
 		select {
 		case st := <-resChan:
-			if st.code > 0 {
+			if st.code != dto.CommandExecResultStatusOk && res == dto.CommandExecResultStatusOk {
 				iContext.GetOutputWriter().Write(st.output)
 				res = st.code
 			}
+			wg.Done()
 		case <-returnChan:
 			return res
 		case <-doneChan:
 			buf := make([]byte, 1024)
+		readLoop:
 			for {
 				n, err := lastReaderPipe.Read(buf)
 				if err == io.EOF {
-					break
+					break readLoop
 				}
 				doneBuf = buf[:n]
 			}

@@ -11,7 +11,7 @@ import (
 )
 
 func Test_commandManager_SearchCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface, _ []string) int {
+	f := func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
 		panic("exit")
 	}
 	c1 := NewCommand("exit", f, true)
@@ -35,7 +35,7 @@ func Test_commandManager_SearchCommands(t *testing.T) {
 }
 
 func Test_commandManager_searchPatternInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface, _ []string) int {
+	f := func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
 		panic("exit")
 	}
 	c1 := NewCommand("exit", f, true)
@@ -64,7 +64,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "90",
 			},
-			want: map[dto.CommandIface]int8{c5: 20},
+			want: map[dto.CommandIface]uint8{c5: 20},
 		},
 		{
 			name: "50%_10",
@@ -74,7 +74,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "24680",
 			},
-			want: map[dto.CommandIface]int8{c4: 25, c5: 50},
+			want: map[dto.CommandIface]uint8{c4: 25, c5: 50},
 		},
 		{
 			name: "50%_10_2",
@@ -84,7 +84,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "12345",
 			},
-			want: map[dto.CommandIface]int8{c5: 50},
+			want: map[dto.CommandIface]uint8{c5: 50},
 		},
 		{
 			name: "50%_10_3",
@@ -94,7 +94,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "12390",
 			},
-			want: map[dto.CommandIface]int8{c5: 50},
+			want: map[dto.CommandIface]uint8{c5: 50},
 		},
 
 		{
@@ -105,7 +105,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "exit",
 			},
-			want: map[dto.CommandIface]int8{c1: 100},
+			want: map[dto.CommandIface]uint8{c1: 100},
 		},
 		{
 			name: "50",
@@ -115,7 +115,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "et",
 			},
-			want: map[dto.CommandIface]int8{c1: 50},
+			want: map[dto.CommandIface]uint8{c1: 50},
 		},
 		{
 			name: "none",
@@ -125,7 +125,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "555",
 			},
-			want: map[dto.CommandIface]int8{},
+			want: map[dto.CommandIface]uint8{},
 		},
 		{
 			name: "44",
@@ -135,7 +135,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "ttk",
 			},
-			want: map[dto.CommandIface]int8{c3: 44},
+			want: map[dto.CommandIface]uint8{c3: 44},
 		},
 		{
 			name: "gobus",
@@ -145,7 +145,7 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 			args: args{
 				searchPattern: "gobus",
 			},
-			want: map[dto.CommandIface]int8{c2: 80, c3: 16},
+			want: map[dto.CommandIface]uint8{c2: 80, c3: 16},
 		},
 	}
 	for _, tt := range tests {
@@ -167,7 +167,7 @@ func Test_getStepValue(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want int8
+		want uint8
 	}{
 		{
 			name: "1234567890",
@@ -222,7 +222,7 @@ func Test_getStepValue(t *testing.T) {
 }
 
 func Test_commandManager_precisionSearchInCommands(t *testing.T) {
-	f := func(internalC dto.InternalContextIface, _ []string) int {
+	f := func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
 		panic("exit")
 	}
 
@@ -250,7 +250,7 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			args: args{
 				searchName: "exit",
 			},
-			want: map[dto.CommandIface]int8{c1: 100},
+			want: map[dto.CommandIface]uint8{c1: 100},
 		},
 		{
 			name: "gettalk",
@@ -260,7 +260,7 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			args: args{
 				searchName: "gettalk",
 			},
-			want: map[dto.CommandIface]int8{c3: 100},
+			want: map[dto.CommandIface]uint8{c3: 100},
 		},
 		{
 			name: "none",
@@ -270,7 +270,7 @@ func Test_commandManager_precisionSearchInCommands(t *testing.T) {
 			args: args{
 				searchName: "et",
 			},
-			want: map[dto.CommandIface]int8{},
+			want: map[dto.CommandIface]uint8{},
 		},
 		// TODO: Add test cases.
 	}
@@ -358,7 +358,7 @@ func Test_searchResult_GetPattern(t *testing.T) {
 
 func NewExitCommand() *Command {
 	return NewCommand("exit",
-		func(internalC dto.InternalContextIface, _ []string) int {
+		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
 			internalC.GetErrChan() <- errors.New("ash exiting")
 			return 0
 		}, true)

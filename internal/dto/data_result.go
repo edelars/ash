@@ -11,6 +11,7 @@ type GetDataResult struct {
 }
 
 type GetDataResultItem struct {
-	Name       string
-	ButtonRune rune
+	ButtonRune  rune
+	Name        string
+	DisplayName string
 }

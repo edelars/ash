@@ -10,10 +10,10 @@ import (
 
 func NewConfigCommand(cfg CfgManager) *commands.Command {
 	return commands.NewCommand("_config",
-		func(internalC dto.InternalContextIface, _ []string) int {
+		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
 			output, _ := json.MarshalIndent(cfg.GetConfig(), "", "\t")
-			internalC.GetPrintFunction()(fmt.Sprintf("%s\n", output))
-			return 0
+			internalC.GetPrintFunction()(fmt.Sprintf("%s\n", output)) // TODO via writer
+			return dto.CommandExecResultStatusOk
 		}, true)
 }
 

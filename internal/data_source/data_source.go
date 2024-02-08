@@ -41,6 +41,7 @@ func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []
 		for i := 0; i < len(res[totalResCount].Items); i++ {
 			r = ds.generateRune(r)
 			res[totalResCount].Items[i].Name = originalCmds[i].GetName()
+			res[totalResCount].Items[i].DisplayName = originalCmds[i].GetDisplayName()
 			res[totalResCount].Items[i].ButtonRune = r
 			ds.keyMapping[r] = originalCmds[i]
 		}

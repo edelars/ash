@@ -8,20 +8,23 @@ import (
 	"ash/internal/pseudo_graphics/windows/selection_window"
 )
 
-func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult) *commands.Command {
+func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune)) *commands.Command {
 	return commands.NewCommand(":Autocomplete",
-		func(iContext dto.InternalContextIface, _ []string) int {
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			doneChan := make(chan struct{}, 1)
 			defer close(doneChan)
 
 			cmdChan := make(chan dto.CommandIface, 1)
 			defer close(cmdChan)
 
+			var r []rune
+
 			sFunc := func(pattern []rune) dto.DataSource {
 				p := commands.NewPattern(string(pattern), false)
 				return data_source.NewDataSource(searchFunc(iContext, p))
 			}
 			rFunc := func(cmd dto.CommandIface, newUserInput []rune) {
+				r = newUserInput
 				doneChan <- struct{}{}
 				cmdChan <- cmd
 			}
@@ -29,9 +32,9 @@ func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext 
 			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc)
 			dr.Draw(&pWindow, iContext, doneChan)
 			if cmd := <-cmdChan; cmd != nil {
-				cmd.GetExecFunc()(iContext, nil)
-				return 0
+				return cmd.GetExecFunc()(iContext, nil)
 			}
-			return -1
+			setInputFunc(r)
+			return dto.CommandExecResultNewUserInput
 		}, false)
 }

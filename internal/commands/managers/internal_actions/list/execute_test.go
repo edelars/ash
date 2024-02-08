@@ -17,22 +17,59 @@ func Test_executeCommands(t *testing.T) {
 	b := []byte("123")
 	reader := bytes.NewReader(b)
 
-	var writer bytes.Buffer
+	writer := bytes.Buffer{}
 
 	// 1 test
-	ictx := internal_context.NewInternalContext(context.Background(), nil, nil, nil, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("2", nil, false), commands.NewCommand("3", nil, false)})
+	ictx := internal_context.NewInternalContext(context.Background(), nil, nil, func(s string) { return }, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("2", nil, false), commands.NewCommand("3", nil, false)})
 	res := executeCommands(ictx, nil, execCmdImpl)
 
-	assert.Equal(t, 0, res)
-	assert.Equal(t, b, writer.Bytes())
+	assert.Equal(t, dto.CommandExecResultStatusOk, res)
+	assert.Equal(t, "123123", writer.String())
 
 	// 2 test
-	writer.Reset()
-	ictx = internal_context.NewInternalContext(context.Background(), nil, nil, nil, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("err", nil, false), commands.NewCommand("3", nil, false)})
-	res = executeCommands(ictx, nil, execCmdImpl)
+	for i := 0; i < 100; i++ {
+		reader.Reset(b)
+		writer.Reset()
+		ictx = internal_context.NewInternalContext(context.Background(), nil, nil, func(s string) { return }, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("err", nil, false), commands.NewCommand("3", nil, false)})
+		res = executeCommands(ictx, nil, execCmdImpl)
 
-	assert.Equal(t, 1, res)
-	assert.Equal(t, "err", writer.String())
+		assert.Equal(t, dto.CommandExecResultMainExit, res)
+		assert.Equal(t, "err", writer.String())
+	}
+
+	// 3 test
+	for i := 0; i < 100; i++ {
+
+		reader.Reset(b)
+		writer.Reset()
+		ictx = internal_context.NewInternalContext(context.Background(), nil, nil, func(s string) { return }, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("err", nil, false)})
+		res = executeCommands(ictx, nil, execCmdImpl)
+
+		assert.Equal(t, dto.CommandExecResultMainExit, res)
+		assert.Equal(t, "err", writer.String())
+	}
+
+	// 4 test
+	for i := 0; i < 100; i++ {
+		reader.Reset(b)
+		writer.Reset()
+		ictx = internal_context.NewInternalContext(context.Background(), nil, nil, func(s string) { return }, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("2", nil, false), commands.NewCommand("3", nil, false)})
+		res = executeCommands(ictx, nil, execCmdImpl)
+
+		assert.Equal(t, dto.CommandExecResultStatusOk, res)
+		assert.Equal(t, "123123", writer.String())
+	}
+
+	// 5 test
+	for i := 0; i < 100; i++ {
+		writer.Reset()
+		reader.Reset(b)
+		ictx = internal_context.NewInternalContext(context.Background(), nil, nil, func(s string) { return }, &writer, reader).WithExecutionList([]dto.CommandIface{commands.NewCommand("1", nil, false), commands.NewCommand("2", nil, false), commands.NewCommand("3", nil, false), commands.NewCommand("4", nil, false), commands.NewCommand("5", nil, false)})
+		res = executeCommands(ictx, nil, execCmdImpl)
+
+		assert.Equal(t, dto.CommandExecResultStatusOk, res)
+		assert.Equal(t, "12312345", writer.String())
+	}
 }
 
 func execCmdImpl(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, cmd dto.CommandIface) (st stResult) {
@@ -46,11 +83,12 @@ func execCmdImpl(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWrite
 		}
 		doneBuf = buf[:n]
 	}
+	st.code = dto.CommandExecResultStatusOk
 	if cmd.GetName() == "err" {
-		st.code = 1
+		st.code = dto.CommandExecResultMainExit
 		st.output = []byte("err")
 	}
-	w.Write(doneBuf)
+	w.Write(append(doneBuf, []byte(cmd.GetName())...))
 	w.Close()
 	return st
 }

@@ -13,13 +13,26 @@ import (
 type CommandPrompt struct {
 	template      string
 	currentBuffer []rune
+	stopChan      chan struct{}
 }
 
 func NewCommandPrompt(template string) CommandPrompt {
 	if template == "" {
 		template = "ash> "
 	}
-	return CommandPrompt{template: template}
+	return CommandPrompt{template: template, stopChan: make(chan struct{})}
+}
+
+// For cases when user input update needed
+func (c *CommandPrompt) GetUserInputFunc() func(r []rune) {
+	return func(r []rune) {
+		c.currentBuffer = r
+	}
+}
+
+func (c *CommandPrompt) Stop() {
+	c.stopChan <- struct{}{}
+	defer close(c.stopChan)
 }
 
 func (c *CommandPrompt) getPrompt() string {
@@ -65,15 +78,28 @@ mainLoop:
 					c.currentBuffer = append(c.currentBuffer, rune(' '))
 					iContext.GetPrintFunction()(" ")
 				} else {
-					if res := exec.Execute(iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)); res >= -1 {
+					ictx := iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)
+					r := exec.Execute(ictx)
+					switch r {
+					case dto.CommandExecResultNewUserInput:
+						iContext.GetPrintFunction()("\n")
+					case dto.CommandExecResultNotDoAnyting:
+						continue
+					case dto.CommandExecResultMainExit:
+						iContext.GetErrChan() <- errors.New("done")
+					default:
 						c.currentBuffer = nil
-						promptChan <- struct{}{}
+						iContext.GetPrintFunction()("\n")
 					}
+					promptChan <- struct{}{}
 				}
 			}
 		case <-promptChan:
 			iContext.GetPrintFunction()(c.getPrompt())
-		case <-iContext.GetCTX().Done():
+			if c.currentBuffer != nil {
+				iContext.GetPrintFunction()(string(c.currentBuffer))
+			}
+		case <-c.stopChan:
 			break mainLoop
 		}
 	}
@@ -81,5 +107,5 @@ mainLoop:
 }
 
 type Executor interface {
-	Execute(internalC dto.InternalContextIface) int
+	Execute(internalC dto.InternalContextIface) dto.ExecResult
 }

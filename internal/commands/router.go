@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"sort"
 	"sync"
 
 	"ash/internal/dto"
@@ -90,5 +91,12 @@ func (c *commandRouterSearchResult) GetDataByPattern(pattern dto.PatternIface) [
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 
-	return c.data[pattern]
+	return sortCommandRouterSearchResult(c.data[pattern])
+}
+
+func sortCommandRouterSearchResult(cmsrs []dto.CommandManagerSearchResult) []dto.CommandManagerSearchResult {
+	sort.Slice(cmsrs, func(i, j int) bool {
+		return cmsrs[i].GetPriority() > cmsrs[j].GetPriority()
+	})
+	return cmsrs
 }

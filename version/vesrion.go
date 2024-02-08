@@ -1,7 +1,7 @@
 package version
 
 var (
-	BuildTime = "unset"
-	Commit    = "unset"
-	Release   = "0.1"
+	BuildTime  = "unset"
+	Commit     = "unset"
+	BranchName = "unset"
 )

@@ -26,7 +26,7 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 	}
 }
 
-func (r commandExecutor) Execute(iContext dto.InternalContextIface) int {
+func (r *commandExecutor) Execute(iContext dto.InternalContextIface) dto.ExecResult {
 	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(iContext.GetLastKeyPressed())); mainCommand != nil {
 		var err error
 		if mainCommand.MustPrepareExecutionList() {
@@ -35,14 +35,15 @@ func (r commandExecutor) Execute(iContext dto.InternalContextIface) int {
 				iContext.GetPrintFunction()(fmt.Sprintf("Error execute: %s\n", err.Error()))
 			}
 		}
-		return mainCommand.GetExecFunc()(iContext, mainCommand.GetArgs())
+		r := mainCommand.GetExecFunc()(iContext, mainCommand.GetArgs())
+		return r
 	} else {
 		// iContext.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", iContext.GetLastKeyPressed()))
 	}
-	return 0
+	return dto.CommandExecResultStatusOk
 }
 
-func (r commandExecutor) prepareExecutionList(iContext dto.InternalContextIface) (dto.InternalContextIface, error) {
+func (r *commandExecutor) prepareExecutionList(iContext dto.InternalContextIface) (dto.InternalContextIface, error) {
 	var executionList []dto.CommandIface
 
 	pattrensArr, argsArr := splitToArrays(string(iContext.GetCurrentInputBuffer()))

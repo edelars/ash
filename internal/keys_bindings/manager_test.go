@@ -77,6 +77,10 @@ type searchResult struct {
 	patternValue dto.PatternIface
 }
 
+func (searchresult *searchResult) GetPriority() uint8 {
+	panic("not implemented") // TODO: Implement
+}
+
 func (searchresult *searchResult) GetSourceName() string {
 	return searchresult.name
 }
