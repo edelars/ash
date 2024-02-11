@@ -12,7 +12,7 @@ import (
 
 const (
 	constManagerName = "Filesystem"
-	constDirDisplay  = "dir"
+	constDirDisplay  = "dir "
 	constFileDisplay = "file"
 )
 
@@ -54,9 +54,12 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 
 		if !pattern.IsPrecisionSearch() {
 			for _, item := range findPathsByPrefixPath(pattern.GetPattern()) {
-				c := NewPseudoCommand(item.name, m.inputSet, generateDescription(constDirDisplay, item.info), item.name)
+				s := constFileDisplay
+				if item.isDir {
+					s = constDirDisplay
+				}
+				c := NewPseudoCommand(item.name, m.inputSet, generateDescription(s, item.info), item.name)
 				c.SetMathWeight(100)
-				// c.SetDisplayName(filepath.Join(fileResItem.dir, fileName))
 				data = append(data, c)
 			}
 		}
@@ -105,7 +108,7 @@ func getFileNamesInDir(dir string, skipDirs bool) (res []fileInfo) {
 		if err == nil {
 			info = p.Mode().String()
 		}
-		res = append(res, fileInfo{v.Name(), info})
+		res = append(res, fileInfo{v.IsDir(), v.Name(), info})
 	}
 	return res
 }
@@ -123,33 +126,16 @@ type filesResult struct {
 }
 
 type fileInfo struct {
-	name string
-	info string
+	isDir bool
+	name  string
+	info  string
 }
 
 // var/log /var/log /var/lo var/lo
 func findPathsByPrefixPath(pattern string) (paths []fileInfo) {
-	// pattern = filepath.Clean(pattern)
-	// if _, err := os.Lstat(pattern); err == nil {
-	// 	paths = append(paths, pattern)
-	// }
-	//
-	// var res []string
-	// if _, err := os.Lstat(pattern); err == nil {
-	// 	r := getFileNamesInDir(pattern, false)
-	// 	res = append(res, ....)
-	// } else {
-	// 	pattern = filepath.Dir(pattern)
-	// 	res = append(res, getFileNamesInDir(pattern, false)...)
-	// }
-	// for _, v := range res {
-	// 	paths = append(paths, filepath.Join(pattern, v))
-	// }
-	// return paths
-
 	pattern = filepath.Clean(pattern)
 	if i, err := os.Lstat(pattern); err == nil {
-		paths = append(paths, fileInfo{pattern, i.Mode().String()})
+		paths = append(paths, fileInfo{i.IsDir(), pattern, i.Mode().String()})
 	}
 
 	if _, err := os.Lstat(pattern); err != nil {
@@ -158,7 +144,7 @@ func findPathsByPrefixPath(pattern string) (paths []fileInfo) {
 
 	r := getFileNamesInDir(pattern, false)
 	for _, v := range r {
-		paths = append(paths, fileInfo{filepath.Join(pattern, v.name), v.info})
+		paths = append(paths, fileInfo{v.isDir, filepath.Join(pattern, v.name), v.info})
 	}
 
 	return paths

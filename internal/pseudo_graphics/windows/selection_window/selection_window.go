@@ -13,7 +13,7 @@ const (
 
 	constColumMainMinWid   = 20
 	constColumnFileInfoWid = 9
-	constColumnGap         = 2
+	constColumnGap         = 4
 )
 
 type selectionWindow struct {
@@ -157,7 +157,7 @@ func (sw *selectionWindow) reDraw(clearScreen bool) {
 	case 0: // if no data we will draw empty results message
 		x := sw.mainW/2 - len([]rune(constNoDataMessage))/2 // calculate center of screen
 		y := (sw.mainH - bottomInputBarH) / 2
-		tbprint(x, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, constNoDataMessage)
+		tbPrint(x, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, constNoDataMessage)
 	default: // draw data
 		stepY := sw.mainY
 		for _, ds := range dataResult {
@@ -166,13 +166,13 @@ func (sw *selectionWindow) reDraw(clearScreen bool) {
 	}
 
 	// draw help
-	tbprint(sw.mainX+1, sw.mainY+sw.mainH-4, sw.defaultForegroundColor, sw.defaultBackgroundColor, constHelpMessage)
+	tbPrint(sw.mainX+1, sw.mainY+sw.mainH-4, sw.defaultForegroundColor, sw.defaultBackgroundColor, constHelpMessage)
 	// draw input
 	sw.drawRectangle(sw.mainX, sw.mainY+sw.mainH-3, sw.mainW, 3) // draw input box
 	curX := sw.mainX + 1
 	curY := sw.mainY + sw.mainH - 2
 
-	tbprint(curX, curY, termbox.ColorDefault, termbox.ColorDefault, string(sw.currentInput))
+	tbPrint(curX, curY, termbox.ColorDefault, termbox.ColorDefault, string(sw.currentInput))
 	curX = curX + len(sw.currentInput)
 	sw.setCursor(curX, curY)
 }
@@ -193,7 +193,7 @@ func (sw *selectionWindow) fill(x, y, w, h int, cell termbox.Cell) {
 	}
 }
 
-func tbprint(x, y int, fg, bg termbox.Attribute, msg string) int {
+func tbPrint(x, y int, fg, bg termbox.Attribute, msg string) int {
 	for _, c := range msg {
 		termbox.SetCell(x, y, c, fg, bg)
 		x += 1
@@ -201,9 +201,21 @@ func tbprint(x, y int, fg, bg termbox.Attribute, msg string) int {
 	return x
 }
 
-func (sw *selectionWindow) drawRectangle(x, y, w, h int) {
-	const coldef = termbox.ColorDefault
+func tbPrintWithHighlights(x, y int, fg, bg termbox.Attribute, msg string, pattern []rune) int {
+	var patternCursor int
+	for _, c := range msg {
+		f := fg
+		if len(pattern) > patternCursor && c == pattern[patternCursor] {
+			f = f + termbox.AttrUnderline
+			patternCursor++
+		}
+		termbox.SetCell(x, y, c, f, bg)
+		x += 1
+	}
+	return x
+}
 
+func (sw *selectionWindow) drawRectangle(x, y, w, h int) {
 	sw.fill(x+1, y, w-2, 1, termbox.Cell{Ch: sw.getDrawSymbol('─')})     // top line
 	sw.fill(x+1, y+h-1, w-2, 1, termbox.Cell{Ch: sw.getDrawSymbol('─')}) // bottom line
 
@@ -218,16 +230,17 @@ func (sw *selectionWindow) drawRectangle(x, y, w, h int) {
 
 func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
 	// draw caption aka source
-	tbprint(x, y, sw.sourceForegroundColor, sw.sourceBackgroundColor, "Source: "+data.SourceName)
+	tbPrint(x, y, sw.sourceForegroundColor, sw.sourceBackgroundColor, "Source: "+data.SourceName)
 	y++
 
 	// draw items
 	for _, item := range data.Items {
-		xNew := tbprint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
-		xNew = tbprint(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : "+item.DisplayName)
+		xNew := tbPrint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
+		xNew = tbPrint(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : ")
+		xNew = tbPrintWithHighlights(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, item.DisplayName, trimInput(sw.currentInput))
 		if sw.showCommandDescription && sw.columnDescriptionX > 0 && sw.columnDescriptionMaxWid > 0 {
 			desc := firstN(item.Description, sw.columnDescriptionMaxWid)
-			xNew = tbprint(sw.columnDescriptionX+5, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, desc)
+			xNew = tbPrint(sw.columnDescriptionX+5, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, desc)
 		}
 		y++
 	}

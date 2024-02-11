@@ -55,12 +55,12 @@ func Test_getFileNamesInDirs(t *testing.T) {
 				dirs:     []string{"1"},
 				skipDirs: false,
 				searchFunc: func(dir string, skipDirs bool) []fileInfo {
-					return []fileInfo{{"a1", "1"}, {"a2", "2"}}
+					return []fileInfo{{true, "a1", "1"}, {false, "a2", "2"}}
 				},
 			},
 			wantRes: []filesResult{{
 				dir:   "1",
-				files: []fileInfo{{"a1", "1"}, {"a2", "2"}},
+				files: []fileInfo{{true, "a1", "1"}, {false, "a2", "2"}},
 			}},
 		},
 	}
