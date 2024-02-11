@@ -38,9 +38,17 @@ type commandImpl struct {
 	Weight      uint8
 	Name        string
 	DispalyName string
+	Description string
+}
+
+func (commandimpl *commandImpl) GetDescription() string {
+	return commandimpl.Description
 }
 
 func (commandimpl *commandImpl) GetDisplayName() string {
+	if commandimpl.DispalyName == "" {
+		return commandimpl.Name
+	}
 	return commandimpl.DispalyName
 }
 
@@ -345,11 +353,16 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 		avalaibleSpace         int
 		overheadLinesPerSource int
 	}
+	type w struct {
+		res []dto.GetDataResult
+		m   int
+		d   int
+	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   []dto.GetDataResult
+		want   w
 	}{
 		{
 			name: "1",
@@ -358,35 +371,42 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 					name: "1",
 				}, &searchResult{
 					name:         "2",
-					commandsData: []dto.CommandIface{&commandImpl{Name: "22"}},
+					commandsData: []dto.CommandIface{&commandImpl{Name: "22", Description: "123456"}},
 				}, &searchResult{
 					name:         "3",
-					commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11}, &commandImpl{Name: "33", Weight: 100}, &commandImpl{Name: "35", Weight: 90}},
+					commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11, Description: "4"}, &commandImpl{Name: "33", Weight: 100}, &commandImpl{Name: "3533", Weight: 90, Description: "444"}},
 				}}, keyMapping: make(map[rune]dto.CommandIface),
 			},
 			args: args{
 				avalaibleSpace:         30,
 				overheadLinesPerSource: 2,
 			},
-			want: []dto.GetDataResult{{
+			want: w{[]dto.GetDataResult{{
 				SourceName: "2",
 				Items: []dto.GetDataResultItem{{
-					Name:       "22",
-					ButtonRune: '0',
+					Name:        "22",
+					DisplayName: "22",
+					ButtonRune:  '0',
+					Description: "123456",
 				}},
 			}, {
 				SourceName: "3",
 				Items: []dto.GetDataResultItem{{
-					Name:       "33",
-					ButtonRune: '1',
+					Name:        "33",
+					DisplayName: "33",
+					ButtonRune:  '1',
 				}, {
-					Name:       "35",
-					ButtonRune: '2',
+					Name:        "3533",
+					DisplayName: "3533",
+					ButtonRune:  '2',
+					Description: "444",
 				}, {
-					Name:       "34",
-					ButtonRune: '3',
+					Name:        "34",
+					DisplayName: "34",
+					ButtonRune:  '3',
+					Description: "4",
 				}},
-			}},
+			}}, 4, 6},
 		},
 	}
 	for _, tt := range tests {
@@ -395,8 +415,15 @@ func Test_dataSourceImpl_GetData(t *testing.T) {
 				originalData: tt.fields.originalData,
 				keyMapping:   tt.fields.keyMapping,
 			}
-			if got := datasourceimpl.GetData(tt.args.avalaibleSpace, tt.args.overheadLinesPerSource); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("dataSourceImpl.GetData() = %v, want %v", got, tt.want)
+			got, m, d := datasourceimpl.GetData(tt.args.avalaibleSpace, tt.args.overheadLinesPerSource)
+			if !reflect.DeepEqual(got, tt.want.res) {
+				t.Errorf("dataSourceImpl.GetData() = %v, want %v", got, tt.want.res)
+			}
+			if !reflect.DeepEqual(m, tt.want.m) {
+				t.Errorf("dataSourceImpl.GetData() = %v, want %v", m, tt.want.m)
+			}
+			if !reflect.DeepEqual(d, tt.want.d) {
+				t.Errorf("dataSourceImpl.GetData() = %v, want %v", d, tt.want.d)
 			}
 		})
 	}
@@ -414,7 +441,7 @@ func Test_dataSourceImpl_GetCommand(t *testing.T) {
 		commandsData: []dto.CommandIface{&commandImpl{Name: "34", Weight: 11}, &commandImpl{Name: "33", Weight: 100}},
 	}}
 
-	res := h.GetData(12, 1)
+	res, _, _ := h.GetData(12, 1)
 	for r := 0; r < len(res); r++ {
 		for i := 0; i < len(res[r].Items); i++ {
 			assert.Equal(t, res[r].Items[i].Name, h.GetCommand(res[r].Items[i].ButtonRune).GetName())

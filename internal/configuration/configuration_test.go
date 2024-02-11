@@ -53,13 +53,14 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 				Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
 				Prompt:      "ASH> ",
 				Colors: Colors{
-					Autocomplete: Autocomplete{
+					AutocompleteColors: AutocompleteColors{
 						SourceText:       1,
 						SourceBackground: 13,
 						ResultKeyText:    1,
 						ResultBackground: 11,
 					},
 				},
+				Autocomplete: AutocompleteOpts{ShowFileInformation: true},
 			},
 		},
 	}

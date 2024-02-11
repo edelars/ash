@@ -1,6 +1,7 @@
 package file_system
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,7 +10,11 @@ import (
 	"ash/internal/dto"
 )
 
-const constManagerName = "Filesystem"
+const (
+	constManagerName = "Filesystem"
+	constDirDisplay  = "dir"
+	constFileDisplay = "file"
+)
 
 type fileSystemManager struct {
 	inputSet func(r []rune)
@@ -49,7 +54,7 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 
 		if !pattern.IsPrecisionSearch() {
 			for _, item := range findPathsByPrefixPath(pattern.GetPattern()) {
-				c := NewPseudoCommand(item, m.inputSet)
+				c := NewPseudoCommand(item.name, m.inputSet, generateDescription(constDirDisplay, item.info), item.name)
 				c.SetMathWeight(100)
 				// c.SetDisplayName(filepath.Join(fileResItem.dir, fileName))
 				data = append(data, c)
@@ -57,14 +62,14 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 		}
 
 		for _, fileResItem := range filesResults {
-			for _, fileName := range fileResItem.files {
+			for _, fInfo := range fileResItem.files {
 				if pattern.IsPrecisionSearch() { // exec
-					if pattern.GetPattern() == fileName {
-						data = append(data, NewSystemCommand(fileName))
+					if pattern.GetPattern() == fInfo.name {
+						data = append(data, NewSystemCommand(fInfo.name, ""))
 					}
 				} else { // autocomplete
-					c := NewPseudoCommand(fileName, m.inputSet)
-					c.SetDisplayName(filepath.Join(fileResItem.dir, fileName))
+					displayName := filepath.Join(fileResItem.dir, fInfo.name)
+					c := NewPseudoCommand(fInfo.name, m.inputSet, generateDescription(constFileDisplay, fInfo.info), displayName)
 					data = append(data, c)
 				}
 			}
@@ -85,7 +90,7 @@ func preparePathArr(path string) (res []string) {
 	return res
 }
 
-func getFileNamesInDir(dir string, skipDirs bool) (res []string) {
+func getFileNamesInDir(dir string, skipDirs bool) (res []fileInfo) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return res
@@ -95,12 +100,17 @@ func getFileNamesInDir(dir string, skipDirs bool) (res []string) {
 		if v.IsDir() && skipDirs {
 			continue
 		}
-		res = append(res, v.Name())
+		var info string
+		p, err := v.Info()
+		if err == nil {
+			info = p.Mode().String()
+		}
+		res = append(res, fileInfo{v.Name(), info})
 	}
 	return res
 }
 
-func getFileNamesInDirs(dirs []string, skipDirs bool, searchFunc func(dir string, skipDirs bool) []string) (res []filesResult) {
+func getFileNamesInDirs(dirs []string, skipDirs bool, searchFunc func(dir string, skipDirs bool) []fileInfo) (res []filesResult) {
 	for _, v := range dirs {
 		res = append(res, filesResult{dir: v, files: searchFunc(v, skipDirs)})
 	}
@@ -109,25 +119,55 @@ func getFileNamesInDirs(dirs []string, skipDirs bool, searchFunc func(dir string
 
 type filesResult struct {
 	dir   string
-	files []string
+	files []fileInfo
+}
+
+type fileInfo struct {
+	name string
+	info string
 }
 
 // var/log /var/log /var/lo var/lo
-func findPathsByPrefixPath(pattern string) (paths []string) {
+func findPathsByPrefixPath(pattern string) (paths []fileInfo) {
+	// pattern = filepath.Clean(pattern)
+	// if _, err := os.Lstat(pattern); err == nil {
+	// 	paths = append(paths, pattern)
+	// }
+	//
+	// var res []string
+	// if _, err := os.Lstat(pattern); err == nil {
+	// 	r := getFileNamesInDir(pattern, false)
+	// 	res = append(res, ....)
+	// } else {
+	// 	pattern = filepath.Dir(pattern)
+	// 	res = append(res, getFileNamesInDir(pattern, false)...)
+	// }
+	// for _, v := range res {
+	// 	paths = append(paths, filepath.Join(pattern, v))
+	// }
+	// return paths
+
 	pattern = filepath.Clean(pattern)
-	if _, err := os.Lstat(pattern); err == nil {
-		paths = append(paths, pattern)
+	if i, err := os.Lstat(pattern); err == nil {
+		paths = append(paths, fileInfo{pattern, i.Mode().String()})
 	}
 
-	var res []string
-	if _, err := os.Lstat(pattern); err == nil {
-		res = append(res, getFileNamesInDir(pattern, false)...)
-	} else {
+	if _, err := os.Lstat(pattern); err != nil {
 		pattern = filepath.Dir(pattern)
-		res = append(res, getFileNamesInDir(pattern, false)...)
 	}
-	for _, v := range res {
-		paths = append(paths, filepath.Join(pattern, v))
+
+	r := getFileNamesInDir(pattern, false)
+	for _, v := range r {
+		paths = append(paths, fileInfo{filepath.Join(pattern, v.name), v.info})
 	}
+
 	return paths
+}
+
+func generateDescription(constStr, info string) string {
+	if info == "" {
+		return constStr
+	} else {
+		return fmt.Sprintf("%s %s", constStr, info)
+	}
 }

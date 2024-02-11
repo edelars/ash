@@ -27,3 +27,6 @@ colors:
     sourceBackground: 13
     resultKeyText: 1
     resultBackground: 11
+
+autocomplete:
+  showFileInformation: true

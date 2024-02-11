@@ -57,7 +57,7 @@ func main() {
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
 	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
-	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc())
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete.ShowFileInformation)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
@@ -72,7 +72,6 @@ func main() {
 	}()
 
 	// waiting for stop or error xD
-
 	<-errs
 	go func() {
 		for range errs {
@@ -80,20 +79,8 @@ func main() {
 	}()
 	cancelFunc()
 
-	// internalContext.GetPrintFunction()(err.Error())
-
-	// wg.Add(1)
-	// go func() {
-	// defer wg.Done()
 	promptGenerator.Stop()
-
-	// }()
-	// wg.Wait()
-	// wg.Add(1)
-	// go func() {
-	// defer wg.Done()
 	inputManager.Stop()
-	// }()
 
 	wg.Wait()
 	println("\ndone")

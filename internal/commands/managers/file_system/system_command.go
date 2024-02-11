@@ -7,8 +7,8 @@ import (
 	"ash/internal/dto"
 )
 
-func NewSystemCommand(fileToExec string) *commands.Command {
-	return commands.NewCommand(fileToExec,
+func NewSystemCommand(fileToExec, description string) *commands.Command {
+	return commands.NewCommandWithExtendedInfo(fileToExec,
 		func(iContext dto.InternalContextIface, args []string) dto.ExecResult {
 			ctx := iContext.GetCTX()
 			cmd := exec.CommandContext(ctx, fileToExec, args...)
@@ -20,5 +20,5 @@ func NewSystemCommand(fileToExec string) *commands.Command {
 			}
 			// iContext.GetPrintFunction()(cmd.Path)
 			return dto.ExecResult(cmd.ProcessState.ExitCode())
-		}, true)
+		}, true, description, "")
 }

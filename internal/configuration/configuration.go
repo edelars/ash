@@ -14,25 +14,30 @@ const (
 )
 
 type ConfigLoader struct {
-	ConfigFileName string    // for 'config' command output
-	Prompt         string    `yaml:"prompt"`
-	Keybindings    []KeyBind `yaml:"keybindings"`
-	Aliases        []Alias   `yaml:"aliases"`
-	Envs           []string  `yaml:"envs"`
-	Colors         Colors    `yaml:"colors"`
+	ConfigFileName string           // for 'config' command output
+	Prompt         string           `yaml:"prompt"`
+	Keybindings    []KeyBind        `yaml:"keybindings"`
+	Aliases        []Alias          `yaml:"aliases"`
+	Envs           []string         `yaml:"envs"`
+	Colors         Colors           `yaml:"colors"`
+	Autocomplete   AutocompleteOpts `yaml:"autocomplete"`
 }
 
 type Colors struct {
 	DefaultText       uint64 `yaml:"defaultText"`
 	DefaultBackground uint64 `yaml:"defaultBackground"`
-	Autocomplete
+	AutocompleteColors
 }
 
-type Autocomplete struct {
+type AutocompleteColors struct {
 	SourceText       uint64 `yaml:"sourceText"`
 	SourceBackground uint64 `yaml:"sourceBackground"`
 	ResultKeyText    uint64 `yaml:"resultKeyText"`
 	ResultBackground uint64 `yaml:"resultBackground"`
+}
+
+type AutocompleteOpts struct {
+	ShowFileInformation bool `yaml:"showFileInformation"`
 }
 
 type KeyBind struct {
@@ -80,12 +85,15 @@ func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
 		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
 		Prompt:      "ASH> ",
-		Colors: Colors{DefaultText: 0, DefaultBackground: 0, Autocomplete: Autocomplete{
-			SourceText:       1,
-			SourceBackground: 13,
-			ResultKeyText:    1,
-			ResultBackground: 11,
-		}},
+		Colors: Colors{
+			DefaultText: 0, DefaultBackground: 0, AutocompleteColors: AutocompleteColors{
+				SourceText:       1,
+				SourceBackground: 13,
+				ResultKeyText:    1,
+				ResultBackground: 11,
+			},
+		},
+		Autocomplete: AutocompleteOpts{ShowFileInformation: true},
 	}
 	return c
 }

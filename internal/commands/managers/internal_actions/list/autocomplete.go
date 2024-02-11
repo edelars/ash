@@ -8,7 +8,7 @@ import (
 	"ash/internal/pseudo_graphics/windows/selection_window"
 )
 
-func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune)) *commands.Command {
+func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune), showFileInformation bool) *commands.Command {
 	return commands.NewCommand(":Autocomplete",
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			doneChan := make(chan struct{}, 1)
@@ -29,7 +29,7 @@ func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext 
 				cmdChan <- cmd
 			}
 
-			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc)
+			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc, showFileInformation)
 			dr.Draw(&pWindow, iContext, doneChan)
 			if cmd := <-cmdChan; cmd != nil {
 				return cmd.GetExecFunc()(iContext, nil)

@@ -28,7 +28,7 @@ type CommandIface interface {
 	GetArgs() []string
 	MustPrepareExecutionList() bool // current user input ready for exec and need to prepare exec list
 	GetDisplayName() string         // display name
-	SetDisplayName(displayName string)
+	GetDescription() string         // second disply field for autocomplete
 }
 
 type ExecutionFunction func(internalC InternalContextIface, args []string) ExecResult // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)

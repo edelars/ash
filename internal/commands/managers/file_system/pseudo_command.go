@@ -5,10 +5,10 @@ import (
 	"ash/internal/dto"
 )
 
-func NewPseudoCommand(r string, setInputFunc func(r []rune)) *commands.Command {
-	return commands.NewCommand(r,
+func NewPseudoCommand(r string, setInputFunc func(r []rune), fileInfo, displayName string) *commands.Command {
+	return commands.NewCommandWithExtendedInfo(r,
 		func(_ dto.InternalContextIface, _ []string) dto.ExecResult {
 			setInputFunc([]rune(r))
 			return dto.CommandExecResultNewUserInput
-		}, false)
+		}, false, fileInfo, displayName)
 }

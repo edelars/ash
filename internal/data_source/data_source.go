@@ -21,11 +21,13 @@ func (ds *dataSourceImpl) GetCommand(r rune) dto.CommandIface {
 	return ds.keyMapping[r]
 }
 
-func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []dto.GetDataResult {
+// Return data, mainFieldMaxWid,descFieldMaxWid
+func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) ([]dto.GetDataResult, int, int) {
 	res := ds.initGetDataResult(avalaibleSpace, overheadLinesPerSource)
 
 	var totalResCount int
 	var r rune
+	var mainFieldMaxWid, descFieldMaxWid int
 
 	for _, v := range ds.originalData {
 		if totalResCount >= len(res) {
@@ -38,17 +40,26 @@ func (ds *dataSourceImpl) GetData(avalaibleSpace, overheadLinesPerSource int) []
 
 		originalCmds := sortSlice(v.GetCommands())
 
-		for i := 0; i < len(res[totalResCount].Items); i++ {
+		for i := 0; i < len(res[totalResCount].Items) && i < len(originalCmds); i++ {
 			r = ds.generateRune(r)
 			res[totalResCount].Items[i].Name = originalCmds[i].GetName()
 			res[totalResCount].Items[i].DisplayName = originalCmds[i].GetDisplayName()
 			res[totalResCount].Items[i].ButtonRune = r
+			res[totalResCount].Items[i].Description = originalCmds[i].GetDescription()
 			ds.keyMapping[r] = originalCmds[i]
+
+			if l := len(res[totalResCount].Items[i].DisplayName); l > mainFieldMaxWid {
+				mainFieldMaxWid = l
+			}
+			if l := len(res[totalResCount].Items[i].Description); l > descFieldMaxWid {
+				descFieldMaxWid = l
+			}
+
 		}
 		totalResCount++
 	}
 
-	return res
+	return res, mainFieldMaxWid, descFieldMaxWid
 }
 
 func (ds *dataSourceImpl) generateRune(i rune) rune {

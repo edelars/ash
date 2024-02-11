@@ -10,6 +10,10 @@ import (
 const (
 	constHelpMessage   = "Press <tab> to change focus and <[a-z]> to execute command from search results"
 	constNoDataMessage = "No search results"
+
+	constColumMainMinWid   = 20
+	constColumnFileInfoWid = 9
+	constColumnGap         = 2
 )
 
 type selectionWindow struct {
@@ -19,6 +23,10 @@ type selectionWindow struct {
 	mainY   int
 	mainW   int
 	mainH   int
+
+	columnDescriptionX      int
+	columnDescriptionMaxWid int
+	columnGap               int
 
 	defaultBackgroundColor termbox.Attribute
 	defaultForegroundColor termbox.Attribute
@@ -33,9 +41,11 @@ type selectionWindow struct {
 	currentInput []rune
 	searchFunc   func(patter []rune) dto.DataSource
 	resultFunc   func(cmd dto.CommandIface, userInput []rune)
+
+	showCommandDescription bool
 }
 
-func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune)) selectionWindow {
+func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), showCommandDesciption bool) selectionWindow {
 	sw := selectionWindow{
 		defaultBackgroundColor: 0,
 		defaultForegroundColor: 0,
@@ -48,12 +58,15 @@ func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.Dat
 		currentInput:           userInput,
 		searchFunc:             searchFunc,
 		resultFunc:             resultFunc,
+		showCommandDescription: showCommandDesciption,
+		columnGap:              constColumnGap,
 	}
 	if runewidth.EastAsianWidth {
 		sw.symbolsMap = map[rune]rune{'─': '-', '│': '|', '┌': '+', '└': '+', '┐': '+', '┘': '+'}
 	} else {
 		sw.symbolsMap = map[rune]rune{'─': '─', '│': '│', '┌': '┌', '└': '└', '┐': '┐', '┘': '┘'}
 	}
+
 	return sw
 }
 
@@ -61,8 +74,25 @@ func (sw *selectionWindow) Close() {
 	sw.resultFunc(nil, sw.currentInput)
 }
 
+// Trim to last word ie: "ls /usr" to "/usr"
+func trimInput(input []rune) []rune {
+	var lastSpacePos int
+	for i := 0; i < len(input); i++ {
+		if input[i] == 32 {
+			lastSpacePos = i
+		}
+	}
+	if lastSpacePos > 0 && len(input) > lastSpacePos {
+		return input[lastSpacePos+1:]
+	}
+	if len(input) == 1 && input[0] == 32 { // single space
+		return []rune(nil)
+	}
+	return input
+}
+
 func (sw *selectionWindow) updateDataSource() {
-	sw.dataSources = sw.searchFunc(sw.currentInput)
+	sw.dataSources = sw.searchFunc(trimInput(sw.currentInput))
 }
 
 func (sw *selectionWindow) KeyInput(key rune) {
@@ -99,6 +129,18 @@ func (sw *selectionWindow) drawCursor() {
 	}
 }
 
+func (sw *selectionWindow) calculateColumnsWidth(mainFieldMaxWid, descFieldMaxWid int) {
+	if sw.showCommandDescription && sw.mainW > mainFieldMaxWid {
+		if descFieldMaxWid < sw.mainW-mainFieldMaxWid-sw.columnGap {
+			sw.columnDescriptionX = mainFieldMaxWid + sw.columnGap + 1
+			sw.columnDescriptionMaxWid = descFieldMaxWid
+		} else if (sw.mainW - mainFieldMaxWid - sw.columnGap) > 10 {
+			sw.columnDescriptionX = sw.mainW - mainFieldMaxWid - sw.columnGap + 1
+			sw.columnDescriptionMaxWid = sw.mainW - mainFieldMaxWid - sw.columnGap
+		}
+	}
+}
+
 func (sw *selectionWindow) reDraw(clearScreen bool) {
 	if clearScreen {
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
@@ -108,7 +150,8 @@ func (sw *selectionWindow) reDraw(clearScreen bool) {
 
 	sw.updateDataSource()
 
-	dataResult := sw.dataSources.GetData(sw.mainH-bottomInputBarH, overheadSpaceForSource)
+	dataResult, mainFieldMaxWid, descFieldMaxWid := sw.dataSources.GetData(sw.mainH-bottomInputBarH, overheadSpaceForSource)
+	sw.calculateColumnsWidth(mainFieldMaxWid, descFieldMaxWid)
 
 	switch len(dataResult) {
 	case 0: // if no data we will draw empty results message
@@ -150,11 +193,12 @@ func (sw *selectionWindow) fill(x, y, w, h int, cell termbox.Cell) {
 	}
 }
 
-func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
+func tbprint(x, y int, fg, bg termbox.Attribute, msg string) int {
 	for _, c := range msg {
 		termbox.SetCell(x, y, c, fg, bg)
 		x += 1
 	}
+	return x
 }
 
 func (sw *selectionWindow) drawRectangle(x, y, w, h int) {
@@ -179,8 +223,12 @@ func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
 
 	// draw items
 	for _, item := range data.Items {
-		tbprint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
-		tbprint(x+2, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : "+item.DisplayName)
+		xNew := tbprint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
+		xNew = tbprint(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : "+item.DisplayName)
+		if sw.showCommandDescription && sw.columnDescriptionX > 0 && sw.columnDescriptionMaxWid > 0 {
+			desc := firstN(item.Description, sw.columnDescriptionMaxWid)
+			xNew = tbprint(sw.columnDescriptionX+5, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, desc)
+		}
 		y++
 	}
 	return y
@@ -201,4 +249,12 @@ type SearchResultIface interface {
 	GetSourceName() string
 	GetCommands() []dto.CommandIface
 	Founded() int
+}
+
+func firstN(s string, n int) string {
+	r := []rune(s)
+	if len(r) > n {
+		return string(r[:n])
+	}
+	return s
 }
