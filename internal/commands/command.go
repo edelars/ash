@@ -1,39 +1,61 @@
 package commands
 
-import (
-	"context"
+import "ash/internal/dto"
 
-	"ash/internal/internal_context"
-)
-
-type ExecF func(ctx context.Context, internalContext internal_context.InternalContextIface, inputChan chan []byte, outputChan chan []byte)
-
-type CommandIface interface {
-	GetMathWeight() int8 // 0-100%
-	GetExecFunc() ExecF
-}
-
-func NewCommand(name string, execFunc ExecF) *Command {
+func NewCommand(name string, execFunc dto.ExecutionFunction, mustPrepareExecutionList bool) *Command {
 	return &Command{
-		execFunc: execFunc,
-		name:     name,
+		execFunc:                 execFunc,
+		name:                     name,
+		mustPrepareExecutionList: mustPrepareExecutionList,
 	}
 }
 
 type Command struct {
-	weight   int8
-	execFunc ExecF
-	name     string
+	mustPrepareExecutionList bool
+	weight                   uint8
+	execFunc                 dto.ExecutionFunction
+	name                     string
+	displayName              string
+	args                     []string
 }
 
-func (c *Command) GetMathWeight() int8 {
+func (c *Command) GetMathWeight() uint8 {
 	return c.weight
 }
 
-func (c *Command) SetMathWeight(weight int8) {
+func (c *Command) SetMathWeight(weight uint8) {
 	c.weight = weight
 }
 
-func (c *Command) GetExecFunc() ExecF {
+func (c *Command) GetExecFunc() dto.ExecutionFunction {
 	return c.execFunc
+}
+
+func (c *Command) GetName() string {
+	return c.name
+}
+
+func (c *Command) GetDisplayName() string {
+	if c.displayName == "" {
+		return c.name
+	}
+	return c.displayName
+}
+
+func (c *Command) SetDisplayName(s string) {
+	c.displayName = s
+}
+
+func (c *Command) WithArgs(args []string) dto.CommandIface {
+	res := *c
+	res.args = args
+	return &res
+}
+
+func (c *Command) GetArgs() []string {
+	return c.args
+}
+
+func (c *Command) MustPrepareExecutionList() bool {
+	return c.mustPrepareExecutionList
 }

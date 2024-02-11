@@ -1,38 +1,41 @@
 package commands
 
-import "sync"
+import (
+	"sort"
+	"sync"
 
-// 1. Internal commands
+	"ash/internal/dto"
+)
+
+// 1. Internal actions (for key binds and manual startup)
 // 2. Filesystems commands i.e. exec /usr/sbin/fdisk
 // 3. Internal POSIX commands like 'cd'
-type CommandRouter struct {
+type commandRouter struct {
 	commandManagers []CommandManagerIface
 }
 
-func (r *CommandRouter) AddNewCommandManager(newCommandManager CommandManagerIface) {
+func (r *commandRouter) AddNewCommandManager(newCommandManager CommandManagerIface) {
 	r.commandManagers = append(r.commandManagers, newCommandManager)
 }
 
-func (r *CommandRouter) SearchCommands(patterns ...PatternIface) commandRouterSearchResult {
+func (r *commandRouter) SearchCommands(iContext dto.InternalContextIface, patterns ...dto.PatternIface) dto.CommandRouterSearchResult {
 	var wg sync.WaitGroup
 	res := NewCommandRouterSearchResult()
-
-	resultChan := make(chan CommandManagerSearchResult, r.getCommandManagerCount())
+	resultChan := make(chan dto.CommandManagerSearchResult, r.getCommandManagerCount())
 	defer close(resultChan)
 
+	wg.Add(len(patterns) * r.getCommandManagerCount())
+
 	go func() {
-		for r := range resultChan {
-			// if _, ok := res[r.GetSourceName()]; ok {
-			// } else {
-			// }
-			res.AddResult(r)
+		for rFromChan := range resultChan {
+			if rFromChan.Founded() != 0 {
+				res.AddResult(rFromChan)
+			}
 			wg.Done()
 		}
 	}()
-
 	for _, cm := range r.commandManagers {
-		go cm.SearchCommands(resultChan, patterns...)
-		wg.Add(len(patterns))
+		go cm.SearchCommands(iContext, resultChan, patterns...)
 	}
 
 	wg.Wait()
@@ -40,12 +43,18 @@ func (r *CommandRouter) SearchCommands(patterns ...PatternIface) commandRouterSe
 	return res
 }
 
-func (r *CommandRouter) getCommandManagerCount() int {
+func (r *commandRouter) getCommandManagerCount() int {
 	return len(r.commandManagers)
 }
 
-func NewCommandRouter(commandManagers ...CommandManagerIface) CommandRouter {
-	c := CommandRouter{
+func (r *commandRouter) GetSearchFunc() func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+	return func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+		return r.SearchCommands(iContext, pattern).GetDataByPattern(pattern)
+	}
+}
+
+func NewCommandRouter(commandManagers ...CommandManagerIface) commandRouter {
+	c := commandRouter{
 		commandManagers: make([]CommandManagerIface, len(commandManagers)),
 	}
 
@@ -57,30 +66,37 @@ func NewCommandRouter(commandManagers ...CommandManagerIface) CommandRouter {
 }
 
 type CommandManagerIface interface {
-	SearchCommands(resultChan chan CommandManagerSearchResult, patterns ...PatternIface)
+	SearchCommands(iContext dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface)
 }
 
-type CommandManagerSearchResult interface {
-	GetSourceName() string
-	GetCommands() []CommandIface
-	GetPattern() PatternIface
-}
-
-func NewCommandRouterSearchResult() commandRouterSearchResult {
+func NewCommandRouterSearchResult() *commandRouterSearchResult {
 	c := commandRouterSearchResult{
-		data: make(map[PatternIface][]CommandManagerSearchResult),
+		data: make(map[dto.PatternIface][]dto.CommandManagerSearchResult),
 	}
-	return c
+	return &c
 }
 
 type commandRouterSearchResult struct {
-	data map[PatternIface][]CommandManagerSearchResult
+	sync.Mutex
+	data map[dto.PatternIface][]dto.CommandManagerSearchResult
 }
 
-func (c *commandRouterSearchResult) AddResult(searchResult CommandManagerSearchResult) {
+func (c *commandRouterSearchResult) AddResult(searchResult dto.CommandManagerSearchResult) {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
 	c.data[searchResult.GetPattern()] = append(c.data[searchResult.GetPattern()], searchResult)
 }
 
-func (c *commandRouterSearchResult) GetDataByPattern(pattern PatternIface) []CommandManagerSearchResult {
-	return c.data[pattern]
+func (c *commandRouterSearchResult) GetDataByPattern(pattern dto.PatternIface) []dto.CommandManagerSearchResult {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+
+	return sortCommandRouterSearchResult(c.data[pattern])
+}
+
+func sortCommandRouterSearchResult(cmsrs []dto.CommandManagerSearchResult) []dto.CommandManagerSearchResult {
+	sort.Slice(cmsrs, func(i, j int) bool {
+		return cmsrs[i].GetPriority() > cmsrs[j].GetPriority()
+	})
+	return cmsrs
 }

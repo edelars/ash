@@ -1,83 +1,105 @@
 package main
 
 import (
-	"bufio"
-	"errors"
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"os/signal"
-	"strings"
+	"sync"
 	"syscall"
+
+	"ash/internal/command_prompt"
+	"ash/internal/commands"
+	"ash/internal/commands/managers/file_system"
+	integrated "ash/internal/commands/managers/integrated_commands"
+	"ash/internal/commands/managers/internal_actions"
+	"ash/internal/configuration"
+	"ash/internal/configuration/envs_loader"
+	"ash/internal/executor"
+	"ash/internal/internal_context"
+	"ash/internal/io_manager"
+	"ash/internal/keys_bindings"
+	"ash/internal/pseudo_graphics/drawer"
 )
 
 func main() {
-	errs := make(chan error)
+	errs := make(chan error, 10)
+	defer close(errs)
+
 	go waitInterruptSignal(errs)
 
-	// intergratedManager := integrated.NewIntegratedManager()
-	// commandRouter := commands.NewCommandRouter(intergratedManager)
+	var wg sync.WaitGroup
 
-	inChan := make(chan []byte)
-	go readInput(inChan)
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
 
-	for {
-		select {
-		case i := <-inChan:
-			fmt.Println(string(i))
-		case <-errs:
-			break
-		}
-	}
-}
+	cfg := configuration.NewConfigLoader()
 
-func readInput(outChan chan []byte) {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		// fmt.Print("> ")
-		// Read the keyboad input.
-		input, err := reader.ReadBytes('\n')
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-		fmt.Printf("got: %s\n", string(input))
-		outChan <- input
-	}
-}
+	// load ENVs at start
+	envs_loader.LoadEnvs(cfg)
 
-// ErrNoPath is returned when 'cd' was called without a second argument.
-var ErrNoPath = errors.New("path required")
+	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 
-func execInput(input string) error {
-	// Split the input separate the command and the arguments.
-	args := strings.Split(input, " ")
-
-	// Check for built-in commands.
-	switch args[0] {
-	case "cd":
-		// 'cd' to home with empty path not yet supported.
-		if len(args) < 2 {
-			return ErrNoPath
-		}
-		// Change the directory and return the error.
-		return os.Chdir(args[1])
-	case "exit":
-		os.Exit(0)
+	inputManager := io_manager.NewInputManager(&promptGenerator)
+	if err := inputManager.Init(); err != nil {
+		fmt.Println(err)
 	}
 
-	// Prepare the command to execute.
-	cmd := exec.Command(args[0], args[1:]...)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errs <- inputManager.Start()
+	}()
 
-	// Set the correct output device.
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
+	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":RemoveLeftSymbol"))
 
-	// Execute the command return the error.
-	return cmd.Run()
+	// managers init
+	intergratedManager := integrated.NewIntegratedManager(&cfg)
+	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
+	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc())
+	commandRouter.AddNewCommandManager(actionManager)
+	// done managers init
+
+	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs, inputManager.GetPrintFunction(), inputManager, inputManager)
+	keyBindingsManager := keys_bindings.NewKeyBindingsManager(internalContext, cfg, &commandRouter)
+	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errs <- promptGenerator.Run(internalContext, &exec, cfg)
+	}()
+
+	// waiting for stop or error xD
+
+	<-errs
+	go func() {
+		for range errs {
+		}
+	}()
+	cancelFunc()
+
+	// internalContext.GetPrintFunction()(err.Error())
+
+	// wg.Add(1)
+	// go func() {
+	// defer wg.Done()
+	promptGenerator.Stop()
+
+	// }()
+	// wg.Wait()
+	// wg.Add(1)
+	// go func() {
+	// defer wg.Done()
+	inputManager.Stop()
+	// }()
+
+	wg.Wait()
+	println("\ndone")
 }
 
 func waitInterruptSignal(errs chan<- error) {
-	fmt.Println("exit now")
 	c := make(chan os.Signal, 3)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	errs <- fmt.Errorf("%s", <-c)
