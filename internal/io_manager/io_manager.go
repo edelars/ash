@@ -1,7 +1,7 @@
 package io_manager
 
 import (
-	"context"
+	"bytes"
 	"errors"
 	"io"
 
@@ -20,7 +20,6 @@ type inputManager struct {
 	cursorX                int
 	cursorY                int
 	manager                commands.CommandManagerIface
-	outputCellChan         chan []termbox.Cell
 	inputEventChan         chan termbox.Event
 	defaultBackgroundColor termbox.Attribute
 	defaultForegroundColor termbox.Attribute
@@ -45,8 +44,12 @@ func (i *inputManager) Read(p []byte) (n int, err error) {
 }
 
 func (i *inputManager) Write(p []byte) (n int, err error) {
-	for _, r := range []rune(string(p)) {
+	termbox.Sync()
+	var t int
+
+	for _, r := range bytes.Runes(p) {
 		if r == rune('\r') {
+			t++
 			continue
 		}
 		if r == rune('\t') {
@@ -55,6 +58,7 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 		}
 
 		if r == rune('\n') {
+			t++
 			w, h := termbox.Size()
 			i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
 			i.cursorX = 0
@@ -71,8 +75,6 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 
 func (i *inputManager) Stop() {
 	termbox.Interrupt()
-	// termbox.Sync()
-	// termbox.Flush()
 }
 
 func (i *inputManager) Init() error {
@@ -85,12 +87,8 @@ func (i *inputManager) Init() error {
 }
 
 func (i *inputManager) Start() error {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-
 	defer termbox.Close()
 	defer close(i.inputEventChan)
-	go i.listenOutputCellChan(ctx)
 
 	i.moveCursorAtStartPostion()
 	for {
@@ -107,24 +105,6 @@ func (i *inputManager) Start() error {
 		default:
 			i.inputEventChan <- ev
 		}
-	}
-}
-
-func (i *inputManager) listenOutputCellChan(ctx context.Context) {
-	defer close(i.outputCellChan)
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case cells := <-i.outputCellChan:
-			i.printCells(cells)
-		}
-	}
-}
-
-func (i *inputManager) printCells(cells []termbox.Cell) {
-	for _, c := range cells {
-		i.printSymbol(c)
 	}
 }
 
@@ -180,12 +160,10 @@ func (i *inputManager) GetInputEventChan() chan termbox.Event {
 }
 
 func (i *inputManager) GetPrintFunction() func(msg string) {
-	return func(msg string) {
-		var r []termbox.Cell
+	return func(msg string) { // TODO rewrite to Write()
 		for _, c := range msg {
-			r = append(r, termbox.Cell{Ch: c, Fg: i.defaultForegroundColor, Bg: i.defaultBackgroundColor})
+			i.printSymbol(termbox.Cell{Ch: c, Fg: i.defaultForegroundColor, Bg: i.defaultBackgroundColor})
 		}
-		i.outputCellChan <- r
 	}
 }
 
@@ -196,7 +174,6 @@ func (i *inputManager) GetManager() commands.CommandManagerIface {
 func NewInputManager(pm promptManager) *inputManager {
 	im := inputManager{
 		inputEventChan:         make(chan termbox.Event),
-		outputCellChan:         make(chan []termbox.Cell, 1),
 		defaultBackgroundColor: termbox.ColorDefault,
 		defaultForegroundColor: termbox.ColorDefault,
 	}

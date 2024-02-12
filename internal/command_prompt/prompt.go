@@ -84,12 +84,12 @@ mainLoop:
 					case dto.CommandExecResultNewUserInput:
 						iContext.GetPrintFunction()("\n")
 					case dto.CommandExecResultNotDoAnyting:
-						continue
+						continue mainLoop
 					case dto.CommandExecResultMainExit:
 						iContext.GetErrChan() <- errors.New("done")
 					default:
 						c.currentBuffer = nil
-						iContext.GetPrintFunction()("\n")
+						// iContext.GetPrintFunction()("\n")
 					}
 					promptChan <- struct{}{}
 				}

@@ -1,18 +1,20 @@
 package list
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"ash/internal/commands"
 	"ash/internal/dto"
+
+	"gopkg.in/yaml.v3"
 )
 
 func NewConfigCommand(cfg CfgManager) *commands.Command {
 	return commands.NewCommand("_config",
 		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
-			output, _ := json.MarshalIndent(cfg.GetConfig(), "", "\t")
-			internalC.GetPrintFunction()(fmt.Sprintf("%s\n", output)) // TODO via writer
+			data, err := yaml.Marshal(cfg.GetConfig())
+			if err == nil {
+				w := internalC.GetOutputWriter()
+				w.Write(data)
+			}
 			return dto.CommandExecResultStatusOk
 		}, true)
 }

@@ -20,6 +20,7 @@ import (
 	"ash/internal/io_manager"
 	"ash/internal/keys_bindings"
 	"ash/internal/pseudo_graphics/drawer"
+	"ash/internal/storage/sqlite_storage"
 )
 
 func main() {
@@ -37,6 +38,14 @@ func main() {
 
 	// load ENVs at start
 	envs_loader.LoadEnvs(cfg)
+
+	storage := sqlite_storage.NewSqliteStorage(cfg.Sqlite)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errs <- storage.Run()
+	}()
 
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 
@@ -57,7 +66,7 @@ func main() {
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
 	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
-	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete.ShowFileInformation)
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
@@ -81,7 +90,7 @@ func main() {
 
 	promptGenerator.Stop()
 	inputManager.Stop()
-
+	storage.Stop()
 	wg.Wait()
 	println("\ndone")
 }

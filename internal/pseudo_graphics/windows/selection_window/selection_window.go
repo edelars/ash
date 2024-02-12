@@ -1,6 +1,7 @@
 package selection_window
 
 import (
+	"ash/internal/configuration"
 	"ash/internal/dto"
 
 	"github.com/mattn/go-runewidth"
@@ -13,7 +14,6 @@ const (
 
 	constColumMainMinWid   = 20
 	constColumnFileInfoWid = 9
-	constColumnGap         = 4
 )
 
 type selectionWindow struct {
@@ -45,21 +45,21 @@ type selectionWindow struct {
 	showCommandDescription bool
 }
 
-func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), showCommandDesciption bool) selectionWindow {
+func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), autocomplOpts configuration.AutocompleteOpts) selectionWindow {
 	sw := selectionWindow{
-		defaultBackgroundColor: 0,
-		defaultForegroundColor: 0,
+		defaultBackgroundColor: termbox.ColorDefault,
+		defaultForegroundColor: termbox.ColorDefault,
 		sourceBackgroundColor:  termbox.ColorLightBlue,
 		sourceForegroundColor:  termbox.ColorBlack,
 		srKeyBackgroundColor:   termbox.ColorLightGreen,
 		srKeyForegroundColor:   termbox.ColorBlack,
-		focused:                false,
+		focused:                autocomplOpts.InputFocusedByDefault,
 		symbolsMap:             map[rune]rune{},
 		currentInput:           userInput,
 		searchFunc:             searchFunc,
 		resultFunc:             resultFunc,
-		showCommandDescription: showCommandDesciption,
-		columnGap:              constColumnGap,
+		showCommandDescription: autocomplOpts.ShowFileInformation,
+		columnGap:              autocomplOpts.ColumnGap,
 	}
 	if runewidth.EastAsianWidth {
 		sw.symbolsMap = map[rune]rune{'─': '-', '│': '|', '┌': '+', '└': '+', '┐': '+', '┘': '+'}

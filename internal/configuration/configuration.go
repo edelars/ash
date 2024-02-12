@@ -14,19 +14,19 @@ const (
 )
 
 type ConfigLoader struct {
-	ConfigFileName string           // for 'config' command output
-	Prompt         string           `yaml:"prompt"`
-	Keybindings    []KeyBind        `yaml:"keybindings"`
-	Aliases        []Alias          `yaml:"aliases"`
-	Envs           []string         `yaml:"envs"`
-	Colors         Colors           `yaml:"colors"`
-	Autocomplete   AutocompleteOpts `yaml:"autocomplete"`
+	ConfigFileName string            // for 'config' command output
+	Prompt         string            `yaml:"prompt"`
+	Keybindings    []KeyBind         `yaml:"keybindings"`
+	Aliases        []Alias           `yaml:"aliases"`
+	Envs           []string          `yaml:"envs"`
+	Colors         Colors            `yaml:"colors"`
+	Autocomplete   AutocompleteOpts  `yaml:"autocomplete"`
+	Sqlite         StorageSqliteOpts `yaml:"sqlite"`
 }
 
 type Colors struct {
 	DefaultText       uint64 `yaml:"defaultText"`
 	DefaultBackground uint64 `yaml:"defaultBackground"`
-	AutocompleteColors
 }
 
 type AutocompleteColors struct {
@@ -37,7 +37,18 @@ type AutocompleteColors struct {
 }
 
 type AutocompleteOpts struct {
-	ShowFileInformation bool `yaml:"showFileInformation"`
+	ShowFileInformation   bool               `yaml:"showFileInformation"`
+	InputFocusedByDefault bool               `yaml:"inputFocusedByDefault"`
+	ColumnGap             int                `yaml:"columnGap"`
+	Colors                AutocompleteColors `yaml:"colors"`
+}
+
+type StorageSqliteOpts struct {
+	FileName         string `yaml:"file"`
+	WriteBuffer      int    `yaml:"writeBuffer"`
+	MaxHistoryPerDir int    `yaml:"maxHistoryPerDir"`
+	MaxHistoryTotal  int    `yaml:"maxHistoryTotal"`
+	CleanupInterval  int    `yaml:"cleanupInterval"`
 }
 
 type KeyBind struct {
@@ -63,20 +74,20 @@ func NewConfigLoader() ConfigLoader {
 	startupConfig := newStartupConfigLoader()
 
 	mainConfigFilename := getConfigFilename(startupConfig.Options.ConfigDir, configdir.LocalConfig())
-	var config ConfigLoader
+	config := newConfigLoaderWithDefaults()
 
 	if _, err := os.Stat(mainConfigFilename); err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
-	// Read the file
 	data, err := os.ReadFile(mainConfigFilename)
 	if err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
+
 	config.ConfigFileName = mainConfigFilename
 	return config
 }
@@ -84,16 +95,25 @@ func NewConfigLoader() ConfigLoader {
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
 		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
-		Prompt:      "ASH> ",
+		Prompt:      "ASH- ",
 		Colors: Colors{
-			DefaultText: 0, DefaultBackground: 0, AutocompleteColors: AutocompleteColors{
+			DefaultText: 0, DefaultBackground: 0,
+		},
+		Autocomplete: AutocompleteOpts{
+			ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3, Colors: AutocompleteColors{
 				SourceText:       1,
 				SourceBackground: 13,
 				ResultKeyText:    1,
 				ResultBackground: 11,
 			},
 		},
-		Autocomplete: AutocompleteOpts{ShowFileInformation: true},
+		Sqlite: StorageSqliteOpts{
+			FileName:         "sqlite.db",
+			WriteBuffer:      3,
+			MaxHistoryPerDir: 10,
+			MaxHistoryTotal:  1000,
+			CleanupInterval:  60,
+		},
 	}
 	return c
 }
