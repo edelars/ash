@@ -40,7 +40,6 @@ func main() {
 	envs_loader.LoadEnvs(cfg)
 
 	storage := sqlite_storage.NewSqliteStorage(cfg.Sqlite)
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

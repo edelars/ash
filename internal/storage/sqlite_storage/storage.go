@@ -235,5 +235,24 @@ func (s *sqliteStorage) cleanupOldAllData() error {
 	return nil
 }
 
-func (s *sqliteStorage) GetData() {
+func (s *sqliteStorage) GetTopHistoryForCurrentDirAndAll(currentDir string, limit int) (res []storage.StorageResult) {
+	rows, err := s.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history group by dir order by dir")
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item storageResult
+
+		if err = rows.Scan(&item); err == nil {
+			res = append(res, &item)
+		}
+
+	}
+	return
+}
+
+func (s *sqliteStorage) GetHistoryMathPrefix(prefix string, limit int) []storage.StorageResult {
+	panic("not implemented") // TODO: Implement
 }

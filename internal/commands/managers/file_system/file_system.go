@@ -58,7 +58,7 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 				if item.isDir {
 					s = constDirDisplay
 				}
-				c := NewPseudoCommand(item.name, m.inputSet, generateDescription(s, item.info), item.name)
+				c := commands.NewPseudoCommand(item.name, m.inputSet, generateDescription(s, item.info), item.name)
 				c.SetMathWeight(100)
 				data = append(data, c)
 			}
@@ -72,15 +72,12 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 					}
 				} else { // autocomplete
 					displayName := filepath.Join(fileResItem.dir, fInfo.name)
-					c := NewPseudoCommand(fInfo.name, m.inputSet, generateDescription(constFileDisplay, fInfo.info), displayName)
+					c := commands.NewPseudoCommand(fInfo.name, m.inputSet, generateDescription(constFileDisplay, fInfo.info), displayName)
 					data = append(data, c)
 				}
 			}
 		}
 	}
-}
-
-func prepareData(filesResults []filesResult, getData func(dir string, skipDirs bool) []string, patterns ...dto.PatternIface) {
 }
 
 func preparePathArr(path string) (res []string) {

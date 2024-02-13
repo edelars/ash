@@ -149,7 +149,7 @@ type row struct {
 
 func Test_sqliteStorage_SaveData(t *testing.T) {
 	const filename = "test.sql"
-	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename})
+	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, CleanupInterval: 999})
 	err := h.initStorage()
 	assert.NoError(t, err)
 	go h.Run()
