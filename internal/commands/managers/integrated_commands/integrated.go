@@ -9,6 +9,7 @@ func NewIntegratedManager(configManager list.CfgManager) (im commands.CommandMan
 	return commands.NewCommandManager(
 		"Internal commands",
 		8,
+		false,
 		list.NewExitCommand(),
 		list.NewCDCommand(),
 		list.NewEchoCommand(),

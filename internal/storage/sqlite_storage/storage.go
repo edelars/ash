@@ -44,12 +44,16 @@ func (s *sqliteStorage) Run() error {
 
 	timer := time.NewTicker(time.Duration(s.cleanupInterval) * time.Second)
 
+	errCh := make(chan error)
+
 	defer func() {
 		close(s.stopChan)
 		close(s.inputData)
+		close(errCh)
 		timer.Stop()
 		s.db.Close()
 	}()
+
 	for {
 		select {
 		case i := <-s.inputData:
@@ -58,18 +62,26 @@ func (s *sqliteStorage) Run() error {
 				return err
 			}
 			if cleanNeeded {
-				if err = s.cleanupOldDirData(); err != nil {
-					return err
-				}
-				if err = s.cleanupOldAllData(); err != nil {
-					return err
-				}
+				go func() {
+					if err = s.cleanupOldDirData(); err != nil {
+						errCh <- err
+						return
+					}
+					if err = s.cleanupOldAllData(); err != nil {
+						errCh <- err
+						return
+					}
+					timer.Reset(time.Duration(s.cleanupInterval) * time.Second)
+				}()
 				cleanNeeded = !cleanNeeded
-				timer.Reset(time.Duration(s.cleanupInterval) * time.Second)
 			}
 		case <-timer.C:
 			cleanNeeded = true
 			timer.Stop()
+		case err := <-errCh:
+			if err != nil {
+				return err
+			}
 		case <-s.stopChan:
 			return nil
 		}
@@ -235,24 +247,34 @@ func (s *sqliteStorage) cleanupOldAllData() error {
 	return nil
 }
 
-func (s *sqliteStorage) GetTopHistoryForCurrentDirAndAll(currentDir string, limit int) (res []storage.StorageResult) {
-	rows, err := s.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history group by dir order by dir")
-	if err != nil {
-		return nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var item storageResult
-
-		if err = rows.Scan(&item); err == nil {
-			res = append(res, &item)
-		}
-
-	}
-	return
+func (s *sqliteStorage) GetTopHistoryByDirs(currentDir string, limit int) (res []storage.StorageResult) {
+	// sqlite cant unions when order or limit sets..
+	query := `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir = ? order by usedCounter desc limit ?`
+	res = s.getTopHistory(query, currentDir, limit/2)
+	query = `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir != ? order by usedCounter desc limit ?`
+	res = append(res, s.getTopHistory(query, currentDir, limit/2)...)
+	return res
 }
 
-func (s *sqliteStorage) GetHistoryMathPrefix(prefix string, limit int) []storage.StorageResult {
-	panic("not implemented") // TODO: Implement
+func (s *sqliteStorage) GetTopHistoryByPattern(prefix string, limit int) []storage.StorageResult {
+	//? $1 @ - nothing working :(
+	query := `select lastUsedTime,usedCounter,dir,execWithArgs from history where execWithArgs like '` + prefix + `%' order by usedCounter desc limit ?`
+	return s.getTopHistory(query, limit)
+}
+
+func (s *sqliteStorage) getTopHistory(sqlQuery string, sqlArgs ...any) (res []storage.StorageResult) {
+	rows, err := s.db.Query(sqlQuery, sqlArgs...)
+	if err != nil {
+		return
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var newItem storageResult
+		err = rows.Scan(&newItem.LastUsedTime, &newItem.UsedCounter, &newItem.Dir, &newItem.ExecWithArgs)
+		if err == nil {
+			res = append(res, &newItem)
+		}
+	}
+	return
 }

@@ -32,6 +32,16 @@ func Test_commandManager_SearchCommands(t *testing.T) {
 	res = <-ch
 	assert.Equal(t, 1, len(res.GetCommands()))
 	assert.Equal(t, "dobus", res.GetCommands()[0].GetName())
+
+	pEmpty := NewPattern("", false)
+	im.SearchCommands(nil, ch, pEmpty)
+	res = <-ch
+	assert.Equal(t, 0, len(res.GetCommands()))
+
+	im.supportEmptyPattern = true
+	im.SearchCommands(nil, ch, pEmpty)
+	res = <-ch
+	assert.Equal(t, 3, len(res.GetCommands()))
 }
 
 func Test_commandManager_searchPatternInCommands(t *testing.T) {
@@ -45,7 +55,8 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 	c5 := NewCommand("1234567890", f, true)
 
 	type fields struct {
-		data []dto.CommandIface
+		data                []dto.CommandIface
+		supportEmptyPattern bool
 	}
 	type args struct {
 		searchPattern string
@@ -130,7 +141,8 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 		{
 			name: "44",
 			fields: fields{
-				data: []dto.CommandIface{c2, c3},
+				data:                []dto.CommandIface{c2, c3},
+				supportEmptyPattern: true,
 			},
 			args: args{
 				searchPattern: "ttk",
@@ -140,18 +152,31 @@ func Test_commandManager_searchPatternInCommands(t *testing.T) {
 		{
 			name: "gobus",
 			fields: fields{
-				data: []dto.CommandIface{c1, c2, c3, c4, c5},
+				data:                []dto.CommandIface{c1, c2, c3, c4, c5},
+				supportEmptyPattern: true,
 			},
 			args: args{
 				searchPattern: "gobus",
 			},
 			want: map[dto.CommandIface]uint8{c2: 80, c3: 16},
 		},
+		{
+			name: "supportEmptyPattern 1",
+			fields: fields{
+				data:                []dto.CommandIface{c1, c2, c3, c4, c5},
+				supportEmptyPattern: true,
+			},
+			args: args{
+				searchPattern: "",
+			},
+			want: map[dto.CommandIface]uint8{c1: 100, c2: 100, c3: 100, c4: 100, c5: 100},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := CommandManager{
-				data: tt.fields.data,
+				data:                tt.fields.data,
+				supportEmptyPattern: tt.fields.supportEmptyPattern,
 			}
 			if got := m.searchPatternInCommands(tt.args.searchPattern); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("IntergatedManager.searchPatternInCommands() = %v, want %v", got, tt.want)

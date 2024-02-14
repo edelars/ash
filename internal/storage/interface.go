@@ -4,8 +4,8 @@ import "ash/internal/dto"
 
 type StorageIface interface {
 	SaveData(data DataIface)
-	GetTopHistoryForCurrentDirAndAll(currentDir string, limit int) []StorageResult
-	GetHistoryMathPrefix(prefix string, limit int) []StorageResult
+	GetTopHistoryByDirs(currentDir string, limit int) []StorageResult
+	GetTopHistoryByPattern(prefix string, limit int) []StorageResult
 }
 
 type DataIface interface {

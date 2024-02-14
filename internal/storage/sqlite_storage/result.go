@@ -4,28 +4,28 @@ import "database/sql"
 
 type storageResult struct {
 	LastUsedTime sql.NullInt64  `db:"lastUsedTime"`
-	usedCounter  sql.NullInt16  `db:"usedCounter"`
-	dir          sql.NullString `db:"dir"`
-	execWithArgs sql.NullString `db:"execWithArgs"`
+	UsedCounter  sql.NullInt16  `db:"usedCounter"`
+	Dir          sql.NullString `db:"dir"`
+	ExecWithArgs sql.NullString `db:"execWithArgs"`
 }
 
 func (s *storageResult) GetCommand() string {
-	if s.execWithArgs.Valid {
-		return s.execWithArgs.String
+	if s.ExecWithArgs.Valid {
+		return s.ExecWithArgs.String
 	}
 	return ""
 }
 
 func (s *storageResult) GetDir() string {
-	if s.dir.Valid {
-		return s.dir.String
+	if s.Dir.Valid {
+		return s.Dir.String
 	}
 	return ""
 }
 
 func (s *storageResult) GetUsedCount() int {
-	if s.usedCounter.Valid {
-		return int(s.usedCounter.Int16)
+	if s.UsedCounter.Valid {
+		return int(s.UsedCounter.Int16)
 	}
 	return 0
 }

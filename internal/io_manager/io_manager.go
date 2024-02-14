@@ -177,7 +177,7 @@ func NewInputManager(pm promptManager) *inputManager {
 		defaultBackgroundColor: termbox.ColorDefault,
 		defaultForegroundColor: termbox.ColorDefault,
 	}
-	im.manager = commands.NewCommandManager(constManagerName, 3,
+	im.manager = commands.NewCommandManager(constManagerName, 3, false,
 		list.NewRemoveLeftSymbol(im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)
 	return &im

@@ -312,3 +312,70 @@ func Test_sqliteStorage_cleanupOldAllData(t *testing.T) {
 	rows.Close()
 	assert.NoError(t, os.Remove(filename))
 }
+
+const fillBase string = `INSERT INTO history VALUES(unixepoch(),1,'dir1','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch();
+INSERT INTO history VALUES(unixepoch()+1,1,'dir1','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+1;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir1','cmd3') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+2;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir1','cmd4') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+3;
+INSERT INTO history VALUES(unixepoch(),1,'dir2','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch();
+INSERT INTO history VALUES(unixepoch()+1,1,'dir2','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+1;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir2','cmd3') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+2;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir2','cmd4') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+3;
+INSERT INTO history VALUES(unixepoch(),1,'dir3','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch();
+INSERT INTO history VALUES(unixepoch()+1,1,'dir3','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()+1;
+
+INSERT INTO history VALUES(unixepoch(),1,'dir1','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-1;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir1','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-2;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir1','cmd3') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-3;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir1','cmd4') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-4;
+INSERT INTO history VALUES(unixepoch(),1,'dir2','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-5;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir2','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-6;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir2','cmd3') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-7;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir2','cmd4') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-8;
+INSERT INTO history VALUES(unixepoch(),1,'dir3','cmd1') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-9;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir3','cmd2') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-10;
+
+INSERT INTO history VALUES(unixepoch(),1,'dir1','cmd155') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-1;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir1','cmd2345') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-2;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir1','cmd3343') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-3;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir1','cmd488') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-4;
+INSERT INTO history VALUES(unixepoch(),1,'dir2','cmd14322') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-5;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir2','cmd22342') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-6;
+INSERT INTO history VALUES(unixepoch()+2,1,'dir2','cmd3223') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-7;
+INSERT INTO history VALUES(unixepoch()+3,1,'dir2','cmd433') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-8;
+INSERT INTO history VALUES(unixepoch(),1,'dir3','cmd132111') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-9;
+INSERT INTO history VALUES(unixepoch()+1,1,'dir3','cmd2876') ON CONFLICT(dir,execWithArgs) DO UPDATE SET usedCounter = usedCounter + 1, lastUsedTime = unixepoch()-10;
+`
+
+func Test_sqliteStorage_getTopHistory(t *testing.T) {
+	const filename = "test.sql"
+	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryTotal: 7})
+	err := h.initStorage()
+	assert.NoError(t, err)
+	_, err = h.db.Exec(fillBase)
+	assert.NoError(t, err)
+
+	res := h.GetTopHistoryByPattern("cmd", 5)
+	assert.Equal(t, 5, len(res))
+	for _, v := range res {
+		assert.Equal(t, 2, v.GetUsedCount())
+		assert.Contains(t, v.GetCommand(), "cmd")
+	}
+	assert.NoError(t, os.Remove(filename))
+}
+
+func Test_sqliteStorage_GetTopHistoryByDirs(t *testing.T) {
+	const filename = "test.sql"
+	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryTotal: 7})
+	err := h.initStorage()
+	assert.NoError(t, err)
+	_, err = h.db.Exec(fillBase)
+	assert.NoError(t, err)
+
+	res := h.GetTopHistoryByDirs("dir1", 10)
+	assert.Equal(t, 10, len(res))
+	for _, v := range res {
+		assert.Contains(t, v.GetCommand(), "cmd")
+	}
+	assert.NoError(t, os.Remove(filename))
+}

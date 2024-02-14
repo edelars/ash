@@ -56,39 +56,39 @@ func Test_historyManager_SearchCommands(t *testing.T) {
 	h.storage = &s
 	go h.SearchCommands(&contImpl{}, ch, commands.NewPattern("f1", false))
 	<-ch
-	assert.Equal(t, false, s.getTopHis)
-	assert.Equal(t, true, s.getHisPrefix)
+	assert.Equal(t, false, s.getTopDirs)
+	assert.Equal(t, true, s.getTopPattern)
 
-	s.getHisPrefix = false
-	s.getTopHis = false
+	s.getTopPattern = false
+	s.getTopDirs = false
 	go h.SearchCommands(&contImpl{}, ch, commands.NewPattern("", false))
 	<-ch
-	assert.Equal(t, true, s.getTopHis)
-	assert.Equal(t, false, s.getHisPrefix)
+	assert.Equal(t, true, s.getTopDirs)
+	assert.Equal(t, false, s.getTopPattern)
 
-	s.getHisPrefix = false
-	s.getTopHis = false
+	s.getTopPattern = false
+	s.getTopDirs = false
 	go h.SearchCommands(&contImpl{}, ch, commands.NewPattern("asdf", false))
 	<-ch
-	assert.Equal(t, false, s.getTopHis)
-	assert.Equal(t, false, s.getHisPrefix)
+	assert.Equal(t, false, s.getTopDirs)
+	assert.Equal(t, true, s.getTopPattern)
 }
 
 type storageImpl struct {
-	getTopHis, getHisPrefix bool
+	getTopDirs, getTopPattern bool
 }
 
 func (storageimpl *storageImpl) SaveData(data storage.DataIface) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (storageimpl *storageImpl) GetTopHistoryForCurrentDirAndAll(currentDir string, l int) []storage.StorageResult {
-	storageimpl.getTopHis = true
+func (storageimpl *storageImpl) GetTopHistoryByDirs(currentDir string, l int) []storage.StorageResult {
+	storageimpl.getTopDirs = true
 	return nil
 }
 
-func (storageimpl *storageImpl) GetHistoryMathPrefix(prefix string, l int) []storage.StorageResult {
-	storageimpl.getHisPrefix = true
+func (storageimpl *storageImpl) GetTopHistoryByPattern(prefix string, l int) []storage.StorageResult {
+	storageimpl.getTopPattern = true
 	return nil
 }
 

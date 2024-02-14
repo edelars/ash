@@ -11,6 +11,7 @@ import (
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
 	"ash/internal/commands/managers/file_system"
+	"ash/internal/commands/managers/history"
 	integrated "ash/internal/commands/managers/integrated_commands"
 	"ash/internal/commands/managers/internal_actions"
 	"ash/internal/configuration"
@@ -62,10 +63,11 @@ func main() {
 	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":RemoveLeftSymbol"))
 
 	// managers init
+	historyManager := history.NewHistoryManager(&storage, promptGenerator.GetUserInputFunc())
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
-	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager)
-	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete)
+	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager, &historyManager)
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete, storage.SaveData)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 

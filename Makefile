@@ -20,7 +20,7 @@ buildold: clean test
 
 build: clean test
 	GO_ENABLED=0 go build \
-		-ldflags "-s -w -extldflags -static -X 'version.BranchName=${BRANCH_NAME}' \
+		-ldflags "-s -w  -X 'version.BranchName=${BRANCH_NAME}' \
 		-X 'version.Commit=${COMMIT}' -X 'version.BuildTime=${BUILD_TIME}'" \
        -o ./${BUILD_DIR}/${APP} ./cmd/main.go
 

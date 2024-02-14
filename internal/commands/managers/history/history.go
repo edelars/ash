@@ -40,7 +40,7 @@ func (m *historyManager) SearchCommands(iContext dto.InternalContextIface, resul
 	var data []dto.CommandIface
 
 	defer func() {
-		commandManager := commands.NewCommandManager(constManagerName, 90, data...)
+		commandManager := commands.NewCommandManager(constManagerName, 90, true, data...)
 		commandManager.SearchCommands(iContext, resultChan, patterns...)
 	}()
 
@@ -52,9 +52,9 @@ func (m *historyManager) SearchCommands(iContext dto.InternalContextIface, resul
 		}
 		switch pattern.GetPattern() {
 		case "":
-			res = m.storage.GetTopHistoryForCurrentDirAndAll(iContext.GetCurrentDir(), m.resultLimit)
+			res = m.storage.GetTopHistoryByDirs(iContext.GetCurrentDir(), m.resultLimit)
 		default:
-			res = m.storage.GetHistoryMathPrefix(pattern.GetPattern(), m.resultLimit)
+			res = m.storage.GetTopHistoryByPattern(pattern.GetPattern(), m.resultLimit)
 		}
 		break // only first item
 	}

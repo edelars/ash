@@ -17,6 +17,8 @@ func (p Pattern) GetPattern() string {
 }
 
 func (p Pattern) IsPrecisionSearch() bool {
+	if p.value == "" {
+		return false
+	}
 	return p.precisionSearch
 }
-

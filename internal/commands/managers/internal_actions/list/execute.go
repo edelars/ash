@@ -7,13 +7,15 @@ import (
 
 	"ash/internal/commands"
 	"ash/internal/dto"
+	"ash/internal/storage"
 
 	"github.com/zenthangplus/goccm"
 )
 
-func NewExecuteCommand() *commands.Command {
+func NewExecuteCommand(historyAddFunc func(data storage.DataIface)) *commands.Command {
 	return commands.NewCommand(":Execute",
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
+			historyAddFunc(iContext)
 			return executeCommands(iContext, nil, execCmd)
 		}, true)
 }
