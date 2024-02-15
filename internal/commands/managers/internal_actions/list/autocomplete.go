@@ -9,8 +9,8 @@ import (
 	"ash/internal/pseudo_graphics/windows/selection_window"
 )
 
-func NewAutocompleteCommand(dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune), autocomplOpts configuration.AutocompleteOpts) *commands.Command {
-	return commands.NewCommand(":Autocomplete",
+func NewAutocompleteCommand(cmdName string, dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune), autocomplOpts configuration.AutocompleteOpts) *commands.Command {
+	return commands.NewCommand(cmdName,
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			doneChan := make(chan struct{}, 1)
 			defer close(doneChan)

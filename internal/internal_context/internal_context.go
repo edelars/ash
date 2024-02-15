@@ -18,8 +18,13 @@ type InternalContext struct {
 	currentInputBuffer []rune
 	executionList      []dto.CommandIface
 	printFunc          func(msg string)
+	printCellFunc      func(c []termbox.Cell)
 	outputWriter       io.Writer
 	inputReader        io.Reader
+}
+
+func (i InternalContext) GetVariable(v string) string {
+	panic("not implemented") // TODO: Implement
 }
 
 func (i InternalContext) WithOutputWriter(w io.Writer) dto.InternalContextIface {
@@ -36,14 +41,15 @@ type inputManager interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader) *InternalContext {
+func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
 	return &InternalContext{
-		ctx:          ctx,
-		im:           im,
-		errs:         errs,
-		printFunc:    printFunc,
-		outputWriter: outputWriter,
-		inputReader:  inputReader,
+		ctx:           ctx,
+		im:            im,
+		errs:          errs,
+		printFunc:     printFunc,
+		outputWriter:  outputWriter,
+		inputReader:   inputReader,
+		printCellFunc: printCellFunc,
 	}
 }
 
@@ -97,6 +103,10 @@ func (i InternalContext) GetExecutionList() []dto.CommandIface {
 
 func (i InternalContext) GetPrintFunction() func(msg string) {
 	return i.printFunc
+}
+
+func (i InternalContext) GetCellsPrintFunction() func(cells []termbox.Cell) {
+	return i.printCellFunc
 }
 
 func (i InternalContext) GetInputEventChan() chan termbox.Event {

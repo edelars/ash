@@ -5,8 +5,8 @@ import (
 	"ash/internal/dto"
 )
 
-func NewRemoveLeftSymbol(deleteLeftSymbolAndMoveCursor func(), DeleteLastSymbolFromCurrentBuffer func() error) *commands.Command {
-	return commands.NewCommand(":RemoveLeftSymbol",
+func NewRemoveLeftSymbol(cmdName string, deleteLeftSymbolAndMoveCursor func(), DeleteLastSymbolFromCurrentBuffer func() error) *commands.Command {
+	return commands.NewCommand(cmdName,
 		func(_ dto.InternalContextIface, _ []string) dto.ExecResult {
 			if err := DeleteLastSymbolFromCurrentBuffer(); err == nil {
 				deleteLeftSymbolAndMoveCursor()

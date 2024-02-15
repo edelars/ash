@@ -152,3 +152,4 @@ func TestKeyBindingsManager_GetCommandByKey(t *testing.T) {
 		})
 	}
 }
+

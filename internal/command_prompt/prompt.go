@@ -2,7 +2,6 @@ package command_prompt
 
 import (
 	"errors"
-	"fmt"
 
 	"ash/internal/configuration"
 	"ash/internal/dto"
@@ -11,16 +10,17 @@ import (
 )
 
 type CommandPrompt struct {
-	template      string
+	template      []promptItem
 	currentBuffer []rune
 	stopChan      chan struct{}
+	execAdapter   executionAdapter
 }
 
 func NewCommandPrompt(template string) CommandPrompt {
 	if template == "" {
-		template = "ash> "
+		template = `[{"value": "ash> ", "bold": true}]`
 	}
-	return CommandPrompt{template: template, stopChan: make(chan struct{})}
+	return CommandPrompt{template: parsePromptConfigString([]byte(template)), stopChan: make(chan struct{})}
 }
 
 // For cases when user input update needed
@@ -33,10 +33,6 @@ func (c *CommandPrompt) GetUserInputFunc() func(r []rune) {
 func (c *CommandPrompt) Stop() {
 	c.stopChan <- struct{}{}
 	defer close(c.stopChan)
-}
-
-func (c *CommandPrompt) getPrompt() string {
-	return fmt.Sprintf("%s", c.template)
 }
 
 // Delete rune from user currentBuffer if possible. If not will be error
@@ -58,10 +54,11 @@ func (c *CommandPrompt) DeleteLastSymbolFromCurrentBuffer() error {
 	return c.DeleteFromCurrentBuffer(len(c.currentBuffer) - 1)
 }
 
-func (c *CommandPrompt) Run(iContext dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader) error {
+func (c *CommandPrompt) Run(iContext dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader, enterKey uint16) error {
 	promptChan := make(chan struct{}, 1)
 	defer close(promptChan)
 
+	c.execAdapter = newExecAdapter(exec, enterKey)
 	promptChan <- struct{}{}
 
 mainLoop:
@@ -95,7 +92,7 @@ mainLoop:
 				}
 			}
 		case <-promptChan:
-			iContext.GetPrintFunction()(c.getPrompt())
+			iContext.GetCellsPrintFunction()(c.generatePrompt(iContext))
 			if c.currentBuffer != nil {
 				iContext.GetPrintFunction()(string(c.currentBuffer))
 			}

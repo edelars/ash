@@ -12,8 +12,8 @@ import (
 	"github.com/zenthangplus/goccm"
 )
 
-func NewExecuteCommand(historyAddFunc func(data storage.DataIface)) *commands.Command {
-	return commands.NewCommand(":Execute",
+func NewExecuteCommand(cmdName string, historyAddFunc func(data storage.DataIface)) *commands.Command {
+	return commands.NewCommand(cmdName,
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			historyAddFunc(iContext)
 			return executeCommands(iContext, nil, execCmd)

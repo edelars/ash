@@ -3,6 +3,8 @@ package io_manager
 import (
 	"testing"
 
+	"ash/internal/configuration"
+
 	"github.com/nsf/termbox-go"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +17,7 @@ func (pmimpl *pmImpl) DeleteLastSymbolFromCurrentBuffer() error {
 
 func Test_inputManager_rollScreenUp(t *testing.T) {
 	pm := pmImpl{}
-	h := NewInputManager(&pm)
+	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol)
 
 	// y,  x
 	screen := [][]termbox.Cell{

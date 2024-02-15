@@ -49,7 +49,7 @@ func main() {
 
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
 
-	inputManager := io_manager.NewInputManager(&promptGenerator)
+	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol)
 	if err := inputManager.Init(); err != nil {
 		fmt.Println(err)
 	}
@@ -60,25 +60,39 @@ func main() {
 		errs <- inputManager.Start()
 	}()
 
-	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(":Execute"), cfg.GetKeyBind(":Close"), cfg.GetKeyBind(":Autocomplete"), cfg.GetKeyBind(":RemoveLeftSymbol"))
+	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(configuration.CmdExecute),
+		cfg.GetKeyBind(configuration.CmdClose),
+		cfg.GetKeyBind(configuration.CmdAutocomplete),
+		cfg.GetKeyBind(configuration.CmdRemoveLeftSymbol),
+	)
 
 	// managers init
 	historyManager := history.NewHistoryManager(&storage, promptGenerator.GetUserInputFunc())
 	intergratedManager := integrated.NewIntegratedManager(&cfg)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
 	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager, &historyManager)
-	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer, commandRouter.GetSearchFunc(), promptGenerator.GetUserInputFunc(), cfg.Autocomplete, storage.SaveData)
+	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer,
+		commandRouter.GetSearchFunc(),
+		promptGenerator.GetUserInputFunc(),
+		cfg.Autocomplete,
+		storage.SaveData,
+	)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
-	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs, inputManager.GetPrintFunction(), inputManager, inputManager)
+	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs,
+		inputManager.GetPrintFunction(),
+		inputManager,
+		inputManager,
+		inputManager.GetCellsPrintFunction(),
+	)
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(internalContext, cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- promptGenerator.Run(internalContext, &exec, cfg)
+		errs <- promptGenerator.Run(internalContext, &exec, cfg, cfg.GetKeyBind(configuration.CmdExecute))
 	}()
 
 	// waiting for stop or error xD

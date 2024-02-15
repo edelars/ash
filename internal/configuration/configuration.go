@@ -13,6 +13,13 @@ const (
 	constMainConfigDefaultDir      = "ash"
 )
 
+const (
+	CmdExecute          = ":Execute"
+	CmdClose            = ":Close"
+	CmdAutocomplete     = ":Autocomplete"
+	CmdRemoveLeftSymbol = ":RemoveLeftSymbol"
+)
+
 type ConfigLoader struct {
 	ConfigFileName string            // for 'config' command output
 	Prompt         string            `yaml:"prompt"`
@@ -25,15 +32,15 @@ type ConfigLoader struct {
 }
 
 type Colors struct {
-	DefaultText       uint64 `yaml:"defaultText"`
-	DefaultBackground uint64 `yaml:"defaultBackground"`
+	DefaultText       string `yaml:"defaultText"`
+	DefaultBackground string `yaml:"defaultBackground"`
 }
 
 type AutocompleteColors struct {
-	SourceText       uint64 `yaml:"sourceText"`
-	SourceBackground uint64 `yaml:"sourceBackground"`
-	ResultKeyText    uint64 `yaml:"resultKeyText"`
-	ResultBackground uint64 `yaml:"resultBackground"`
+	SourceText       string `yaml:"sourceText"`
+	SourceBackground string `yaml:"sourceBackground"`
+	ResultKeyText    string `yaml:"resultKeyText"`
+	ResultBackground string `yaml:"resultBackground"`
 }
 
 type AutocompleteOpts struct {
@@ -97,14 +104,14 @@ func newConfigLoaderWithDefaults() ConfigLoader {
 		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
 		Prompt:      "ASH- ",
 		Colors: Colors{
-			DefaultText: 0, DefaultBackground: 0,
+			DefaultText: "#000000", DefaultBackground: "#000000",
 		},
 		Autocomplete: AutocompleteOpts{
 			ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3, Colors: AutocompleteColors{
-				SourceText:       1,
-				SourceBackground: 13,
-				ResultKeyText:    1,
-				ResultBackground: 11,
+				SourceText:       "#000000",
+				SourceBackground: "#8ec07c",
+				ResultKeyText:    "#000000",
+				ResultBackground: "#fabd2f",
 			},
 		},
 		Sqlite: StorageSqliteOpts{

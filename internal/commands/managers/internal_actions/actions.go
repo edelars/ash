@@ -14,7 +14,7 @@ func NewInternalActionsManager(dr pseudo_graphics.Drawer, searchFunc func(iConte
 		"Actions",
 		1,
 		false,
-		list.NewExecuteCommand(historyAddFunc),
-		list.NewAutocompleteCommand(dr, searchFunc, inputSet, autocomplOpts),
+		list.NewExecuteCommand(configuration.CmdExecute, historyAddFunc),
+		list.NewAutocompleteCommand(configuration.CmdAutocomplete, dr, searchFunc, inputSet, autocomplOpts),
 	)
 }

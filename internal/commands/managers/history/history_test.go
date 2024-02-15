@@ -94,6 +94,14 @@ func (storageimpl *storageImpl) GetTopHistoryByPattern(prefix string, l int) []s
 
 type contImpl struct{}
 
+func (contimpl *contImpl) GetCellsPrintFunction() func(cells []termbox.Cell) {
+	panic("not implemented") // TODO: Implement
+}
+
+func (contimpl *contImpl) GetVariable(v string) string {
+	panic("not implemented") // TODO: Implement
+}
+
 func (contimpl *contImpl) GetEnvList() []string {
 	panic("not implemented") // TODO: Implement
 }

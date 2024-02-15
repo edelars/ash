@@ -83,6 +83,7 @@ func (i *inputManager) Init() error {
 		return err
 	}
 	termbox.SetInputMode(termbox.InputMouse)
+	termbox.SetOutputMode(termbox.Output256)
 	return nil
 }
 
@@ -167,18 +168,26 @@ func (i *inputManager) GetPrintFunction() func(msg string) {
 	}
 }
 
+func (i *inputManager) GetCellsPrintFunction() func(cells []termbox.Cell) {
+	return func(cells []termbox.Cell) { // TODO rewrite to Write()
+		for _, c := range cells {
+			i.printSymbol(c)
+		}
+	}
+}
+
 func (i *inputManager) GetManager() commands.CommandManagerIface {
 	return i.manager
 }
 
-func NewInputManager(pm promptManager) *inputManager {
+func NewInputManager(pm promptManager, remSymbCmdName string) *inputManager {
 	im := inputManager{
 		inputEventChan:         make(chan termbox.Event),
 		defaultBackgroundColor: termbox.ColorDefault,
 		defaultForegroundColor: termbox.ColorDefault,
 	}
 	im.manager = commands.NewCommandManager(constManagerName, 3, false,
-		list.NewRemoveLeftSymbol(im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
+		list.NewRemoveLeftSymbol(remSymbCmdName, im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)
 	return &im
 }
