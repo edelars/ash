@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -33,9 +32,6 @@ func main() {
 	go waitInterruptSignal(errs)
 
 	var wg sync.WaitGroup
-
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
 
 	cfg := configuration.NewConfigLoader()
 
@@ -82,7 +78,7 @@ func main() {
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init
 
-	internalContext := internal_context.NewInternalContext(ctx, inputManager, errs,
+	internalContext := internal_context.NewInternalContext(inputManager, errs,
 		inputManager.GetPrintFunction(),
 		inputManager,
 		inputManager,
@@ -104,7 +100,6 @@ func main() {
 		for range errs {
 		}
 	}()
-	cancelFunc()
 
 	promptGenerator.Stop()
 	inputManager.Stop()

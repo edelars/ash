@@ -54,6 +54,7 @@ Example:
 
 #### Roadmap
 ```
+aliases
 internal eventbus
 plugins system
 more commands (>>,>, etc)

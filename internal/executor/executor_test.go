@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -254,7 +253,7 @@ func TestCommandExecutor_Execute(t *testing.T) {
 	cr := commRouterImpl{}
 	kb := keyBinderImpl{}
 	ce := NewCommandExecutor(cr, &kb)
-	ic := internal_context.NewInternalContext(context.Background(), nil, nil, func(msg string) {}, nil, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
+	ic := internal_context.NewInternalContext(nil, nil, func(msg string) {}, nil, nil, nil).WithLastKeyPressed(byte(13)).WithCurrentInputBuffer([]rune("get"))
 
 	res := ce.Execute(ic)
 	assert.Equal(t, true, kb.Success)

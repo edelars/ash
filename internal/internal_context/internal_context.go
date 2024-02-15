@@ -1,7 +1,6 @@
 package internal_context
 
 import (
-	"context"
 	"io"
 	"os"
 
@@ -14,7 +13,6 @@ type InternalContext struct {
 	im                 inputManager
 	errs               chan error
 	currentKeyPressed  byte
-	ctx                context.Context
 	currentInputBuffer []rune
 	executionList      []dto.CommandIface
 	printFunc          func(msg string)
@@ -55,9 +53,8 @@ type inputManager interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
+func NewInternalContext(im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
 	return &InternalContext{
-		ctx:           ctx,
 		im:            im,
 		errs:          errs,
 		printFunc:     printFunc,
@@ -93,10 +90,6 @@ func (i InternalContext) WithCurrentInputBuffer(b []rune) dto.InternalContextIfa
 
 func (i InternalContext) GetCurrentInputBuffer() []rune {
 	return i.currentInputBuffer
-}
-
-func (i InternalContext) GetCTX() context.Context {
-	return i.ctx
 }
 
 func (i InternalContext) GetErrChan() chan error {

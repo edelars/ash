@@ -1,7 +1,6 @@
 package history
 
 import (
-	"context"
 	"io"
 	"testing"
 
@@ -131,10 +130,6 @@ func (contimpl *contImpl) GetCurrentInputBuffer() []rune {
 }
 
 func (contimpl *contImpl) GetLastKeyPressed() byte {
-	panic("not implemented") // TODO: Implement
-}
-
-func (contimpl *contImpl) GetCTX() context.Context {
 	panic("not implemented") // TODO: Implement
 }
 

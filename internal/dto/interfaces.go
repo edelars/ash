@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"context"
 	"io"
 
 	"github.com/nsf/termbox-go"
@@ -64,7 +63,6 @@ type InternalContextIface interface {
 	WithCurrentInputBuffer(b []rune) InternalContextIface
 	GetCurrentInputBuffer() []rune
 	GetLastKeyPressed() byte
-	GetCTX() context.Context
 	GetInputEventChan() chan termbox.Event
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface

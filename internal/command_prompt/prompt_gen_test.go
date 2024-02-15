@@ -1,7 +1,6 @@
 package command_prompt
 
 import (
-	"context"
 	"io"
 	"reflect"
 	"testing"
@@ -205,10 +204,6 @@ func (vstorimpl *vstorImpl) GetCurrentInputBuffer() []rune {
 }
 
 func (vstorimpl *vstorImpl) GetLastKeyPressed() byte {
-	panic("not implemented") // TODO: Implement
-}
-
-func (vstorimpl *vstorImpl) GetCTX() context.Context {
 	panic("not implemented") // TODO: Implement
 }
 

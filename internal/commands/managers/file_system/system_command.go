@@ -1,6 +1,7 @@
 package file_system
 
 import (
+	"context"
 	"os/exec"
 
 	"ash/internal/commands"
@@ -10,7 +11,7 @@ import (
 func NewSystemCommand(fileToExec, description string) *commands.Command {
 	return commands.NewCommandWithExtendedInfo(fileToExec,
 		func(iContext dto.InternalContextIface, args []string) dto.ExecResult {
-			ctx := iContext.GetCTX()
+			ctx := context.Background()
 			cmd := exec.CommandContext(ctx, fileToExec, args...)
 			cmd.Stdin = iContext.GetInputReader()
 			cmd.Stderr = iContext.GetOutputWriter()
