@@ -22,6 +22,8 @@ import (
 	"ash/internal/keys_bindings"
 	"ash/internal/pseudo_graphics/drawer"
 	"ash/internal/storage/sqlite_storage"
+	"ash/internal/variables"
+	"ash/version"
 )
 
 func main() {
@@ -68,7 +70,7 @@ func main() {
 
 	// managers init
 	historyManager := history.NewHistoryManager(&storage, promptGenerator.GetUserInputFunc())
-	intergratedManager := integrated.NewIntegratedManager(&cfg)
+	intergratedManager := integrated.NewIntegratedManager(&cfg, version.Vesion, version.BuildTime, version.Commit, version.BranchName)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
 	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager, &historyManager)
 	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer,
@@ -85,7 +87,8 @@ func main() {
 		inputManager,
 		inputManager,
 		inputManager.GetCellsPrintFunction(),
-	)
+	).WithVariables(variables.GetVariables())
+
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(internalContext, cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
 

@@ -172,6 +172,10 @@ type vstorImpl struct {
 	b bool
 }
 
+func (vstorimpl *vstorImpl) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {
+	panic("not implemented") // TODO: Implement
+}
+
 func (vstorimpl *vstorImpl) GetCellsPrintFunction() func(cells []termbox.Cell) {
 	panic("not implemented") // TODO: Implement
 }
@@ -245,7 +249,7 @@ func (vstorimpl *vstorImpl) WithInputReader(_ io.Reader) dto.InternalContextIfac
 	panic("not implemented") // TODO: Implement
 }
 
-func (vstorimpl *vstorImpl) GetVariable(v string) string {
+func (vstorimpl *vstorImpl) GetVariable(v dto.Variable) string {
 	vstorimpl.b = true
-	return v
+	return string(v)
 }

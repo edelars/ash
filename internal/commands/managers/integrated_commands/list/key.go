@@ -9,26 +9,31 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+const (
+	cmdNameKey = "_key"
+	cmdDescKey = "Displays input key number"
+)
+
 func NewKeyCommand() *commands.Command {
-	return commands.NewCommand("_key",
-		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
-			internalC.GetPrintFunction()("press Enter (13) key to break\n")
+	return commands.NewCommandWithExtendedInfo(cmdNameKey,
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
+			iContext.GetPrintFunction()("press Enter (13) key to break\n")
 			for {
-				ev := <-internalC.GetInputEventChan()
+				ev := <-iContext.GetInputEventChan()
 				switch ev.Type {
 				case termbox.EventKey:
 					if ev.Ch != 0 {
-						internalC.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Ch))
+						iContext.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Ch))
 					} else {
 						switch ev.Ch {
 						case 13:
 							return dto.CommandExecResultStatusOk
 						default:
-							internalC.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Key))
+							iContext.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Key))
 						}
 					}
 				}
 
 			}
-		}, true)
+		}, true, cmdDescKey, cmdNameKey)
 }

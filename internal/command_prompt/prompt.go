@@ -61,6 +61,7 @@ func (c *CommandPrompt) Run(iContext dto.InternalContextIface, exec Executor, cf
 	c.execAdapter = newExecAdapter(exec, enterKey)
 	promptChan <- struct{}{}
 
+	var lastExitStatus dto.ExecResult
 mainLoop:
 	for {
 		select {
@@ -75,7 +76,8 @@ mainLoop:
 					c.currentBuffer = append(c.currentBuffer, rune(' '))
 					iContext.GetPrintFunction()(" ")
 				} else {
-					ictx := iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)
+					v := dto.VariableSet{Name: dto.VariableLastExitCode, Value: string(rune(lastExitStatus))}
+					ictx := iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer).WithVariables([]dto.VariableSet{v})
 					r := exec.Execute(ictx)
 					switch r {
 					case dto.CommandExecResultNewUserInput:
@@ -86,6 +88,7 @@ mainLoop:
 						iContext.GetErrChan() <- errors.New("done")
 					default:
 						c.currentBuffer = nil
+						lastExitStatus = r
 						// iContext.GetPrintFunction()("\n")
 					}
 					promptChan <- struct{}{}

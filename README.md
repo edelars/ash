@@ -1,8 +1,9 @@
 
+
 # Alternative shell 
 Written in golang
 
-### Example configuration file
+#### Example configuration file
 ```yaml
 keybindings:
   - key: 13
@@ -31,26 +32,27 @@ colors:
 autocomplete:
   showFileInformation: true
 ```
-
-### Prompt configuration
+##### Keybindings
+##### Aliases
+##### OS Envs
+##### Prompt configuration
 Its a simple json array:
 ```json
  [{"value": "exe", "color": "#8ec07c", "bold": true,"underline": true }]
 ```
 Where:
-```
-"value" - text, $variable (see variables) or system binary exec "%(git log --pretty=format:"%s"  | head -n 1)"
-"color" - color, string 
-"bold" - bold font, bool
-"underline"- underline font, bool
-```
+**"value"** - text, $variable (see variables) or system binary exec "%(git log --pretty=format:"%s"  | head -n 1)"
+**"color"** - color, string 
+**"bold"** - bold font, bool
+**"underline"**- underline font, bool
+
 Example:
 ```json
 [{"value": "ash> ", "color":"#8ec07c", "bold": true}]
 ```
 
 
-### Roadmap
+#### Roadmap
 ```
 internal eventbus
 plugins system

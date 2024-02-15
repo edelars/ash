@@ -5,7 +5,7 @@ import (
 	"ash/internal/commands/managers/integrated_commands/list"
 )
 
-func NewIntegratedManager(configManager list.CfgManager) (im commands.CommandManagerIface) {
+func NewIntegratedManager(configManager list.CfgManager, version, buildTime, commit, branchName string) (im commands.CommandManagerIface) {
 	return commands.NewCommandManager(
 		"Internal commands",
 		8,
@@ -17,5 +17,6 @@ func NewIntegratedManager(configManager list.CfgManager) (im commands.CommandMan
 		list.NewKeyCommand(),
 		list.NewLogoutCommand(),
 		list.NewConfigCommand(configManager),
+		list.NewVersionCommand(version, buildTime, commit, branchName),
 	)
 }

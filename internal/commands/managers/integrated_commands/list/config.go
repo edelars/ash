@@ -7,16 +7,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	cmdNameConfig = "_config"
+	cmdDescConfig = "Displays current configuration"
+)
+
 func NewConfigCommand(cfg CfgManager) *commands.Command {
-	return commands.NewCommand("_config",
-		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
+	return commands.NewCommandWithExtendedInfo(cmdNameConfig,
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			data, err := yaml.Marshal(cfg.GetConfig())
 			if err == nil {
-				w := internalC.GetOutputWriter()
+				w := iContext.GetOutputWriter()
 				w.Write(data)
 			}
 			return dto.CommandExecResultStatusOk
-		}, true)
+		}, true, cmdDescConfig, cmdNameConfig)
 }
 
 type CfgManager interface {

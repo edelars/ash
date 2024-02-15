@@ -21,10 +21,24 @@ type InternalContext struct {
 	printCellFunc      func(c []termbox.Cell)
 	outputWriter       io.Writer
 	inputReader        io.Reader
+	variables          map[dto.Variable]string
 }
 
-func (i InternalContext) GetVariable(v string) string {
-	panic("not implemented") // TODO: Implement
+func (i InternalContext) GetVariable(v dto.Variable) string {
+	switch v {
+	case dto.VariableCurDir:
+		return i.GetCurrentDir()
+	default:
+		s, _ := i.variables[v]
+		return s
+	}
+}
+
+func (i InternalContext) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {
+	for _, v := range vars {
+		i.variables[v.Name] = v.Value
+	}
+	return i
 }
 
 func (i InternalContext) WithOutputWriter(w io.Writer) dto.InternalContextIface {
@@ -50,6 +64,7 @@ func NewInternalContext(ctx context.Context, im inputManager, errs chan error, p
 		outputWriter:  outputWriter,
 		inputReader:   inputReader,
 		printCellFunc: printCellFunc,
+		variables:     make(map[dto.Variable]string),
 	}
 }
 

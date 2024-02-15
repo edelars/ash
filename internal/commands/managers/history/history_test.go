@@ -94,11 +94,15 @@ func (storageimpl *storageImpl) GetTopHistoryByPattern(prefix string, l int) []s
 
 type contImpl struct{}
 
+func (contimpl *contImpl) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {
+	panic("not implemented") // TODO: Implement
+}
+
 func (contimpl *contImpl) GetCellsPrintFunction() func(cells []termbox.Cell) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (contimpl *contImpl) GetVariable(v string) string {
+func (contimpl *contImpl) GetVariable(v dto.Variable) string {
 	panic("not implemented") // TODO: Implement
 }
 

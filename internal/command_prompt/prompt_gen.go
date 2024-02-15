@@ -54,7 +54,7 @@ func (c *CommandPrompt) generatePieceOfPrompt(iContext dto.InternalContextIface,
 		exeRes, err := c.execAdapter.ExecCmd(iContext, item.Value)
 		return stringToCells(exeRes, color, item.Bold, item.Underline), err
 	case hasPrefix(item.Value, "$"):
-		return stringToCells(iContext.GetVariable(item.Value), color, item.Bold, item.Underline), nil
+		return stringToCells(iContext.GetVariable(dto.Variable(item.Value)), color, item.Bold, item.Underline), nil
 	default:
 		return stringToCells(item.Value, color, item.Bold, item.Underline), nil
 

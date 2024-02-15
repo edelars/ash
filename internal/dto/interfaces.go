@@ -71,7 +71,8 @@ type InternalContextIface interface {
 	GetExecutionList() []CommandIface
 	GetPrintFunction() func(msg string)
 	GetCellsPrintFunction() func(cells []termbox.Cell)
-	GetVariable(v string) string
+	GetVariable(v Variable) string
+	WithVariables(vars []VariableSet) InternalContextIface
 
 	// console I/O
 	GetOutputWriter() io.Writer
