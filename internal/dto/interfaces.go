@@ -56,13 +56,12 @@ type PatternIface interface {
 }
 
 type InternalContextIface interface {
-	GetEnvList() []string
 	GetEnv(envName string) string
 	GetCurrentDir() string
-	WithLastKeyPressed(b byte) InternalContextIface
+	WithLastKeyPressed(b uint16) InternalContextIface
 	WithCurrentInputBuffer(b []rune) InternalContextIface
 	GetCurrentInputBuffer() []rune
-	GetLastKeyPressed() byte
+	GetLastKeyPressed() uint16
 	GetInputEventChan() chan termbox.Event
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface

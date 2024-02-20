@@ -40,7 +40,7 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 	paths := preparePathArr(iContext.GetEnv("$PATH"))
 
 	defer func() {
-		commandManager := commands.NewCommandManager(constManagerName, 100, false, data...)
+		commandManager := commands.NewCommandManager(constManagerName, 8, false, data...)
 		commandManager.SearchCommands(iContext, resultChan, patterns...)
 	}()
 

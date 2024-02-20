@@ -30,7 +30,7 @@ func (a *execAdapter) ExecCmd(iContext dto.InternalContextIface, c string) (res 
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
 
-	ictx := iContext.WithLastKeyPressed(byte(a.key)).WithCurrentInputBuffer([]rune(cmd)).WithOutputWriter(w)
+	ictx := iContext.WithLastKeyPressed(a.key).WithCurrentInputBuffer([]rune(cmd)).WithOutputWriter(w)
 	r := a.exec.Execute(ictx)
 
 	if r != dto.CommandExecResultStatusOk {

@@ -145,6 +145,7 @@ type row struct {
 	LastUsedTime int
 	UsedCounter  int
 	Dir          string
+	Count        int
 }
 
 func Test_sqliteStorage_SaveData(t *testing.T) {
@@ -176,7 +177,7 @@ func Test_sqliteStorage_SaveData(t *testing.T) {
 
 func Test_sqliteStorage_cleanupOldDirData(t *testing.T) {
 	const filename = "test.sql"
-	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryPerDir: 3})
+	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryPerDir: 3000})
 	err := h.initStorage()
 	assert.NoError(t, err)
 	assert.NoError(t, h.putData(&icontextImpl{[]dto.CommandIface{commands.NewCommand("ls", nil, false)}, "dir1"}, 1))
@@ -193,7 +194,26 @@ func Test_sqliteStorage_cleanupOldDirData(t *testing.T) {
 	assert.NoError(t, h.putData(&icontextImpl{[]dto.CommandIface{commands.NewCommand("ls1", nil, false)}, "dir3"}, 5))
 
 	assert.NoError(t, h.cleanupOldDirData())
-	rows, err := h.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history where dir in (select dir from history group by dir HAVING count(dir) = 3) group by dir order by dir")
+
+	rows, err := h.db.Query("select count() as count from history")
+
+	assert.NoError(t, err)
+
+	i := row{}
+	for rows.Next() {
+		err = rows.Scan(&i.Count)
+		assert.NoError(t, err)
+		break
+	}
+
+	assert.Equal(t, 10, i.Count)
+	rows.Close()
+
+	// 2 test
+	h.maxHistoryPerDir = 3
+	assert.NoError(t, h.cleanupOldDirData())
+
+	rows, err = h.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history where dir in (select dir from history group by dir HAVING count(dir) = 3) group by dir order by dir")
 
 	assert.NoError(t, err)
 
@@ -246,7 +266,7 @@ func (icontextimpl *icontextImpl) GetCurrentDir() string {
 
 func Test_sqliteStorage_cleanupOldAllData(t *testing.T) {
 	const filename = "test.sql"
-	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryTotal: 7})
+	h := NewSqliteStorage(configuration.StorageSqliteOpts{FileName: filename, MaxHistoryTotal: 1000})
 	err := h.initStorage()
 	assert.NoError(t, err)
 	assert.NoError(t, h.putData(&icontextImpl{[]dto.CommandIface{commands.NewCommand("ls", nil, false)}, "dir1"}, 1))
@@ -263,7 +283,23 @@ func Test_sqliteStorage_cleanupOldAllData(t *testing.T) {
 	assert.NoError(t, h.putData(&icontextImpl{[]dto.CommandIface{commands.NewCommand("ls1", nil, false)}, "dir3"}, 5))
 
 	assert.NoError(t, h.cleanupOldAllData())
-	rows, err := h.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history group by dir order by dir")
+	rows, err := h.db.Query("select count() as count from history")
+
+	assert.NoError(t, err)
+
+	i := row{}
+	for rows.Next() {
+		err = rows.Scan(&i.Count)
+		assert.NoError(t, err)
+		break
+	}
+
+	assert.Equal(t, 10, i.Count)
+	rows.Close()
+	///
+	h.maxHistoryTotal = 7
+	assert.NoError(t, h.cleanupOldAllData())
+	rows, err = h.db.Query("select min(lastUsedTime) as lastUsedTime,dir from history group by dir order by dir")
 
 	assert.NoError(t, err)
 
@@ -274,6 +310,7 @@ func Test_sqliteStorage_cleanupOldAllData(t *testing.T) {
 		assert.NoError(t, err)
 		data = append(data, i)
 	}
+
 	assert.Equal(t, 3, len(data))
 	assert.Equal(t, "dir1", data[0].Dir)
 	assert.Equal(t, 2, data[0].LastUsedTime)

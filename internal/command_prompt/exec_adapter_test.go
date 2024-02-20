@@ -78,7 +78,7 @@ func Test_execAdapter_ExecCmd(t *testing.T) {
 type execImpl2 struct{}
 
 func (execimpl2 *execImpl2) Execute(internalC dto.InternalContextIface) dto.ExecResult {
-	if internalC.GetLastKeyPressed() == byte(uint16(13)) {
+	if internalC.GetLastKeyPressed() == uint16(13) {
 		internalC.GetOutputWriter().Write([]byte("q\nqq\n"))
 		return dto.CommandExecResultStatusOk
 	} else {

@@ -10,15 +10,15 @@ import (
 )
 
 type InternalContext struct {
-	im                 inputManager
-	errs               chan error
-	currentKeyPressed  byte
+	currentKeyPressed  uint16
+	inputManager       inputManagerIface
+	errsChan           chan error
+	outputWriter       io.Writer
+	inputReader        io.Reader
 	currentInputBuffer []rune
 	executionList      []dto.CommandIface
 	printFunc          func(msg string)
 	printCellFunc      func(c []termbox.Cell)
-	outputWriter       io.Writer
-	inputReader        io.Reader
 	variables          map[dto.Variable]string
 }
 
@@ -49,24 +49,20 @@ func (i InternalContext) WithInputReader(r io.Reader) dto.InternalContextIface {
 	return i
 }
 
-type inputManager interface {
+type inputManagerIface interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
+func NewInternalContext(im inputManagerIface, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
 	return &InternalContext{
-		im:            im,
-		errs:          errs,
+		inputManager:  im,
+		errsChan:      errs,
 		printFunc:     printFunc,
 		outputWriter:  outputWriter,
 		inputReader:   inputReader,
 		printCellFunc: printCellFunc,
 		variables:     make(map[dto.Variable]string),
 	}
-}
-
-func (i InternalContext) GetEnvList() []string {
-	panic("not implemented") // TODO: Implement
 }
 
 func (i InternalContext) GetEnv(envName string) string {
@@ -78,7 +74,7 @@ func (i InternalContext) GetCurrentDir() string {
 	return s
 }
 
-func (i InternalContext) WithLastKeyPressed(b byte) dto.InternalContextIface {
+func (i InternalContext) WithLastKeyPressed(b uint16) dto.InternalContextIface {
 	i.currentKeyPressed = b
 	return i
 }
@@ -93,10 +89,10 @@ func (i InternalContext) GetCurrentInputBuffer() []rune {
 }
 
 func (i InternalContext) GetErrChan() chan error {
-	return i.errs
+	return i.errsChan
 }
 
-func (i InternalContext) GetLastKeyPressed() byte {
+func (i InternalContext) GetLastKeyPressed() uint16 {
 	return i.currentKeyPressed
 }
 
@@ -118,7 +114,7 @@ func (i InternalContext) GetCellsPrintFunction() func(cells []termbox.Cell) {
 }
 
 func (i InternalContext) GetInputEventChan() chan termbox.Event {
-	return i.im.GetInputEventChan()
+	return i.inputManager.GetInputEventChan()
 }
 
 func (i InternalContext) GetOutputWriter() io.Writer {

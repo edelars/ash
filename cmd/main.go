@@ -74,6 +74,7 @@ func main() {
 		promptGenerator.GetUserInputFunc(),
 		cfg.Autocomplete,
 		storage.SaveData,
+		cfg.Colors,
 	)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init

@@ -50,16 +50,28 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 		{
 			name: "defaults",
 			want: ConfigLoader{
-				Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
-				Prompt:      "ASH- ",
-				Colors:      Colors{DefaultText: "#000000", DefaultBackground: "#000000"},
-				Autocomplete: AutocompleteOpts{
-					ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3, Colors: AutocompleteColors{
-						SourceText:       "#000000",
+				Keybindings: []KeyBind{
+					{27, ":Close"},
+					{13, ":Execute"},
+					{9, ":Autocomplete"},
+					{127, ":RemoveLeftSymbol"},
+					{65514, ":ArrowKeyRight"},
+					{65515, ":ArrowKeyLeft"},
+					{65516, ":ArrowKeyDown"},
+					{65517, ":ArrowKeyUp"},
+				},
+				Prompt: "ASH- ",
+				Colors: Colors{
+					DefaultText: "none", DefaultBackground: "none",
+					AutocompleteColors: AutocompleteColors{
+						SourceText:       "none",
 						SourceBackground: "#8ec07c",
-						ResultKeyText:    "#000000",
+						ResultKeyText:    "none",
 						ResultBackground: "#fabd2f",
 					},
+				},
+				Autocomplete: AutocompleteOpts{
+					ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3,
 				},
 				Sqlite: StorageSqliteOpts{
 					FileName:         "sqlite.db",

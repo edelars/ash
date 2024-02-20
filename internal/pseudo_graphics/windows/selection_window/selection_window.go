@@ -4,6 +4,7 @@ import (
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
+	"github.com/go-playground/colors"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
@@ -45,14 +46,8 @@ type selectionWindow struct {
 	showCommandDescription bool
 }
 
-func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), autocomplOpts configuration.AutocompleteOpts) selectionWindow {
+func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), autocomplOpts configuration.AutocompleteOpts, colorsOpts configuration.Colors) selectionWindow {
 	sw := selectionWindow{
-		defaultBackgroundColor: termbox.ColorDefault,
-		defaultForegroundColor: termbox.ColorDefault,
-		sourceBackgroundColor:  termbox.ColorLightBlue,
-		sourceForegroundColor:  termbox.ColorBlack,
-		srKeyBackgroundColor:   termbox.ColorLightGreen,
-		srKeyForegroundColor:   termbox.ColorBlack,
 		focused:                autocomplOpts.InputFocusedByDefault,
 		symbolsMap:             map[rune]rune{},
 		currentInput:           userInput,
@@ -67,6 +62,35 @@ func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.Dat
 		sw.symbolsMap = map[rune]rune{'─': '─', '│': '│', '┌': '┌', '└': '└', '┐': '┐', '┘': '┘'}
 	}
 
+	defaultBackgroundColor, err := colors.ParseHEX(colorsOpts.DefaultBackground)
+	if err == nil {
+		sw.defaultBackgroundColor = termbox.RGBToAttribute(defaultBackgroundColor.ToRGB().R, defaultBackgroundColor.ToRGB().G, defaultBackgroundColor.ToRGB().B)
+	}
+
+	defaultForegroundColor, err := colors.ParseHEX(colorsOpts.DefaultText)
+	if err == nil {
+		sw.defaultForegroundColor = termbox.RGBToAttribute(defaultForegroundColor.ToRGB().R, defaultForegroundColor.ToRGB().G, defaultForegroundColor.ToRGB().B)
+	}
+
+	sourceBackgroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceBackground)
+	if err == nil {
+		sw.sourceBackgroundColor = termbox.RGBToAttribute(sourceBackgroundColor.ToRGB().R, sourceBackgroundColor.ToRGB().G, sourceBackgroundColor.ToRGB().B)
+	}
+
+	sourceForegroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceText)
+	if err == nil {
+		sw.sourceForegroundColor = termbox.RGBToAttribute(sourceForegroundColor.ToRGB().R, sourceForegroundColor.ToRGB().G, sourceForegroundColor.ToRGB().B)
+	}
+
+	srKeyBackgroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceBackground)
+	if err == nil {
+		sw.srKeyBackgroundColor = termbox.RGBToAttribute(srKeyBackgroundColor.ToRGB().R, srKeyBackgroundColor.ToRGB().G, srKeyBackgroundColor.ToRGB().B)
+	}
+
+	srKeyForegroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceText)
+	if err == nil {
+		sw.srKeyForegroundColor = termbox.RGBToAttribute(srKeyForegroundColor.ToRGB().R, srKeyForegroundColor.ToRGB().G, srKeyForegroundColor.ToRGB().B)
+	}
 	return sw
 }
 
@@ -235,7 +259,7 @@ func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
 
 	// draw items
 	for _, item := range data.Items {
-		xNew := tbPrint(x+1, y, sw.srKeyForegroundColor, sw.srKeyBackgroundColor, string(item.ButtonRune))
+		xNew := tbPrint(x+1, y, sw.srKeyForegroundColor|termbox.AttrBold, sw.srKeyBackgroundColor, string(item.ButtonRune))
 		xNew = tbPrint(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : ")
 		xNew = tbPrintWithHighlights(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, item.DisplayName, trimInput(sw.currentInput))
 		if sw.showCommandDescription && sw.columnDescriptionX > 0 && sw.columnDescriptionMaxWid > 0 {

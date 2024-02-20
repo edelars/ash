@@ -105,10 +105,6 @@ func (contimpl *contImpl) GetVariable(v dto.Variable) string {
 	panic("not implemented") // TODO: Implement
 }
 
-func (contimpl *contImpl) GetEnvList() []string {
-	panic("not implemented") // TODO: Implement
-}
-
 func (contimpl *contImpl) GetEnv(envName string) string {
 	panic("not implemented") // TODO: Implement
 }
@@ -117,7 +113,7 @@ func (contimpl *contImpl) GetCurrentDir() string {
 	return "123"
 }
 
-func (contimpl *contImpl) WithLastKeyPressed(b byte) dto.InternalContextIface {
+func (contimpl *contImpl) WithLastKeyPressed(b uint16) dto.InternalContextIface {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -129,7 +125,7 @@ func (contimpl *contImpl) GetCurrentInputBuffer() []rune {
 	panic("not implemented") // TODO: Implement
 }
 
-func (contimpl *contImpl) GetLastKeyPressed() byte {
+func (contimpl *contImpl) GetLastKeyPressed() uint16 {
 	panic("not implemented") // TODO: Implement
 }
 

@@ -23,9 +23,9 @@ func NewKeyCommand() *commands.Command {
 				switch ev.Type {
 				case termbox.EventKey:
 					if ev.Ch != 0 {
-						iContext.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Ch))
+						iContext.GetPrintFunction()(fmt.Sprintf("got ch key: %d\n", ev.Ch))
 					} else {
-						switch ev.Ch {
+						switch ev.Key {
 						case 13:
 							return dto.CommandExecResultStatusOk
 						default:

@@ -34,4 +34,4 @@ generate:
 	go generate ./...
 
 run: 
-	exec  ${BUILD_DIR}/${APP}
+	exec  ${BUILD_DIR}/${APP} -c=/Users/senya/Documents/go/my/ash/config/ash.yaml 

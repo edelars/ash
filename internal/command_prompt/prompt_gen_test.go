@@ -129,12 +129,12 @@ func TestCommandPrompt_generatePieceOfPrompt(t *testing.T) {
 	h := CommandPrompt{execAdapter: &e}
 
 	// 1 test
-	res, err := h.generatePieceOfPrompt(&v, promptItem{})
+	res, err := h.generatePieceOfPrompt(&v, promptItem{Color: "#8ec07c"})
 	assert.Equal(t, errEmptyValue, err)
 	assert.Equal(t, 11, len(res))
 
 	// 2 test
-	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "$sdfs"})
+	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "$sdfs", Color: "#8ec07c"})
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(res))
 	assert.Equal(t, true, v.b)
@@ -142,7 +142,7 @@ func TestCommandPrompt_generatePieceOfPrompt(t *testing.T) {
 
 	// 3 test
 	v.b = false
-	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "%sdfs"})
+	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "%sdfs", Color: "#8ec07c"})
 	assert.NoError(t, err)
 	assert.Equal(t, 5, len(res))
 	assert.Equal(t, false, v.b)
@@ -151,7 +151,7 @@ func TestCommandPrompt_generatePieceOfPrompt(t *testing.T) {
 	// 4 test
 	v.b = false
 	e.b = false
-	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "sdfs"})
+	res, err = h.generatePieceOfPrompt(&v, promptItem{Value: "sdfs", Color: "#8ec07c"})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(res))
 	assert.Equal(t, false, v.b)
@@ -179,10 +179,6 @@ func (vstorimpl *vstorImpl) GetCellsPrintFunction() func(cells []termbox.Cell) {
 	panic("not implemented") // TODO: Implement
 }
 
-func (vstorimpl *vstorImpl) GetEnvList() []string {
-	panic("not implemented") // TODO: Implement
-}
-
 func (vstorimpl *vstorImpl) GetEnv(envName string) string {
 	panic("not implemented") // TODO: Implement
 }
@@ -191,7 +187,7 @@ func (vstorimpl *vstorImpl) GetCurrentDir() string {
 	panic("not implemented") // TODO: Implement
 }
 
-func (vstorimpl *vstorImpl) WithLastKeyPressed(b byte) dto.InternalContextIface {
+func (vstorimpl *vstorImpl) WithLastKeyPressed(b uint16) dto.InternalContextIface {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -203,7 +199,7 @@ func (vstorimpl *vstorImpl) GetCurrentInputBuffer() []rune {
 	panic("not implemented") // TODO: Implement
 }
 
-func (vstorimpl *vstorImpl) GetLastKeyPressed() byte {
+func (vstorimpl *vstorImpl) GetLastKeyPressed() uint16 {
 	panic("not implemented") // TODO: Implement
 }
 

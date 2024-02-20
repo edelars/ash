@@ -9,24 +9,34 @@ keybindings:
     action: ':RemoveLeftSymbol'
   - key: 167
     action: ':Close'
+  - key: 65517
+    action: ':ArrowKeyUp'
+  - key: 65516
+    action: ':ArrowKeyDown'
+  - key: 65515
+    action: ':ArrowKeyLeft'
+  - key: 65514
+    action: ':ArrowKeyRight'
 
 aliases:
   - short: lg
     full: lazygit
-prompt: '[{"value": "ash> ", "color":"#8ec07c", "bold": true}]'
+prompt: '[{"value": "$CURDIR", "color":"#ff3399"},{"value": " >", "color":"#66ff66", "bold": true}]'
 envs:
   - >-
     $PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/go/bin:/opt/homebrew/bin:/opt/homebrew/sbin:  
   - GOROOT=/Users/senya/go
 
 colors:
-  defaultText: 0
-  defaultBackground: 0
+  defaultText: "none"
+  defaultBackground: "#none"
+  selectedForegroundColor : "#3f3f3f"
+  windowBorderForegroundColor : "#b3ffb3"
   autocomplete:
-    sourceText: 1
-    sourceBackground: 13
-    resultKeyText: 1
-    resultBackground: 11
+    sourceText: "none"
+    sourceBackground: "#4db8ff"
+    resultKeyText: "#b3ffb3"
+    resultBackground: "none"
 
 autocomplete:
   showFileInformation: true

@@ -233,12 +233,7 @@ func (s *sqliteStorage) cleanupOldAllData() error {
 		order by 
 		  lastUsedTime 
 		limit 
-		  (
-			select 
-			  count() 
-			from 
-			  history
-		  )-@c
+		  (select max(count()-@c,0) from history)
 	  )
 	`, sql.Named("c", s.maxHistoryTotal))
 	if err != nil {

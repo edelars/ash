@@ -83,7 +83,7 @@ func (i *inputManager) Init() error {
 		return err
 	}
 	termbox.SetInputMode(termbox.InputMouse)
-	termbox.SetOutputMode(termbox.Output256)
+	termbox.SetOutputMode(termbox.OutputRGB)
 	return nil
 }
 

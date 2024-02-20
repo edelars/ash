@@ -18,6 +18,11 @@ const (
 	CmdClose            = ":Close"
 	CmdAutocomplete     = ":Autocomplete"
 	CmdRemoveLeftSymbol = ":RemoveLeftSymbol"
+
+	CmdKeyUp    = ":ArrowKeyUp"
+	CmdKeyDown  = ":ArrowKeyDown"
+	CmdKeyLeft  = ":ArrowKeyLeft"
+	CmdKeyRight = ":ArrowKeyRight"
 )
 
 type ConfigLoader struct {
@@ -34,6 +39,8 @@ type ConfigLoader struct {
 type Colors struct {
 	DefaultText       string `yaml:"defaultText"`
 	DefaultBackground string `yaml:"defaultBackground"`
+
+	AutocompleteColors AutocompleteColors `yaml:"autocomplete"`
 }
 
 type AutocompleteColors struct {
@@ -44,10 +51,9 @@ type AutocompleteColors struct {
 }
 
 type AutocompleteOpts struct {
-	ShowFileInformation   bool               `yaml:"showFileInformation"`
-	InputFocusedByDefault bool               `yaml:"inputFocusedByDefault"`
-	ColumnGap             int                `yaml:"columnGap"`
-	Colors                AutocompleteColors `yaml:"colors"`
+	ShowFileInformation   bool `yaml:"showFileInformation"`
+	InputFocusedByDefault bool `yaml:"inputFocusedByDefault"`
+	ColumnGap             int  `yaml:"columnGap"`
 }
 
 type StorageSqliteOpts struct {
@@ -101,18 +107,28 @@ func NewConfigLoader() ConfigLoader {
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
-		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
-		Prompt:      "ASH- ",
-		Colors: Colors{
-			DefaultText: "#000000", DefaultBackground: "#000000",
+		Keybindings: []KeyBind{
+			{27, ":Close"},
+			{13, ":Execute"},
+			{9, ":Autocomplete"},
+			{127, ":RemoveLeftSymbol"},
+			{65514, ":ArrowKeyRight"},
+			{65515, ":ArrowKeyLeft"},
+			{65516, ":ArrowKeyDown"},
+			{65517, ":ArrowKeyUp"},
 		},
-		Autocomplete: AutocompleteOpts{
-			ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3, Colors: AutocompleteColors{
-				SourceText:       "#000000",
+		Prompt: "ASH- ",
+		Colors: Colors{
+			DefaultText: "none", DefaultBackground: "none",
+			AutocompleteColors: AutocompleteColors{
+				SourceText:       "none",
 				SourceBackground: "#8ec07c",
-				ResultKeyText:    "#000000",
+				ResultKeyText:    "none",
 				ResultBackground: "#fabd2f",
 			},
+		},
+		Autocomplete: AutocompleteOpts{
+			ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3,
 		},
 		Sqlite: StorageSqliteOpts{
 			FileName:         "sqlite.db",

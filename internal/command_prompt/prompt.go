@@ -68,7 +68,7 @@ mainLoop:
 		case ev := <-iContext.GetInputEventChan():
 			switch ev.Type {
 			case termbox.EventKey:
-
+				// panic(fmt.Sprintf("%d %v", ev.Ch, ev.Key))
 				if ev.Ch != 0 {
 					c.currentBuffer = append(c.currentBuffer, ev.Ch)
 					iContext.GetPrintFunction()(string(ev.Ch))
@@ -77,7 +77,7 @@ mainLoop:
 					iContext.GetPrintFunction()(" ")
 				} else {
 					v := dto.VariableSet{Name: dto.VariableLastExitCode, Value: string(rune(lastExitStatus))}
-					ictx := iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer).WithVariables([]dto.VariableSet{v})
+					ictx := iContext.WithLastKeyPressed(uint16(ev.Key)).WithCurrentInputBuffer(c.currentBuffer).WithVariables([]dto.VariableSet{v})
 					r := exec.Execute(ictx)
 					switch r {
 					case dto.CommandExecResultNewUserInput:
