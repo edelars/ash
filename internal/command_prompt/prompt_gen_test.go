@@ -81,7 +81,8 @@ func Test_hasPrefix(t *testing.T) {
 	}
 }
 
-func Test_stringToCells(t *testing.T) {
+func TestCommandPrompt_stringToCells(t *testing.T) {
+	c := CommandPrompt{}
 	type args struct {
 		s     string
 		color colors.Color
@@ -116,7 +117,7 @@ func Test_stringToCells(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotRes := stringToCells(tt.args.s, tt.args.color, tt.args.b, tt.args.u); !reflect.DeepEqual(gotRes, tt.wantRes) {
+			if gotRes := c.stringToCells(tt.args.s, tt.args.color, tt.args.b, tt.args.u); !reflect.DeepEqual(gotRes, tt.wantRes) {
 				t.Errorf("stringToCells() = %v, want %v", gotRes, tt.wantRes)
 			}
 		})

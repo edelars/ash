@@ -63,11 +63,13 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 				Prompt: "ASH- ",
 				Colors: Colors{
 					DefaultText: "none", DefaultBackground: "none",
+					SelectedForegroundColor: "#f5e0dc",
 					AutocompleteColors: AutocompleteColors{
 						SourceText:       "none",
 						SourceBackground: "#8ec07c",
 						ResultKeyText:    "none",
 						ResultBackground: "#fabd2f",
+						DescriptionText:  "none",
 					},
 				},
 				Autocomplete: AutocompleteOpts{

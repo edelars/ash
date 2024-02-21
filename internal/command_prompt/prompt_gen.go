@@ -49,23 +49,23 @@ func (c *CommandPrompt) generatePieceOfPrompt(iContext dto.InternalContextIface,
 
 	switch item.Value {
 	case "":
-		return stringToCells("empty value", nil, false, false), errEmptyValue
+		return c.stringToCells("empty value", nil, false, false), errEmptyValue
 	case hasPrefix(item.Value, "%"):
 		exeRes, err := c.execAdapter.ExecCmd(iContext, item.Value)
-		return stringToCells(exeRes, color, item.Bold, item.Underline), err
+		return c.stringToCells(exeRes, color, item.Bold, item.Underline), err
 	case hasPrefix(item.Value, "$"):
-		return stringToCells(iContext.GetVariable(dto.Variable(item.Value)), color, item.Bold, item.Underline), nil
+		return c.stringToCells(iContext.GetVariable(dto.Variable(item.Value)), color, item.Bold, item.Underline), nil
 	default:
-		return stringToCells(item.Value, color, item.Bold, item.Underline), nil
+		return c.stringToCells(item.Value, color, item.Bold, item.Underline), nil
 
 	}
 }
 
-func stringToCells(s string, color colors.Color, b, u bool) (res []termbox.Cell) {
+func (c *CommandPrompt) stringToCells(s string, color colors.Color, b, u bool) (res []termbox.Cell) {
 	var fg termbox.Attribute
 
 	if color == nil {
-		fg = termbox.ColorDefault
+		fg = c.defaultForegroundColor
 	} else {
 		fg = termbox.RGBToAttribute(color.ToRGB().R, color.ToRGB().G, color.ToRGB().B)
 	}
@@ -77,7 +77,7 @@ func stringToCells(s string, color colors.Color, b, u bool) (res []termbox.Cell)
 		fg = fg | termbox.AttrUnderline
 	}
 	for _, r := range s {
-		res = append(res, termbox.Cell{Ch: r, Fg: fg})
+		res = append(res, termbox.Cell{Ch: r, Fg: fg, Bg: c.defaultBackgroundColor})
 	}
 	return res
 }

@@ -3,6 +3,7 @@ package drawer
 import (
 	"unicode"
 
+	"ash/internal/dto"
 	"ash/internal/pseudo_graphics"
 
 	"github.com/nsf/termbox-go"
@@ -13,16 +14,26 @@ type Drawer struct {
 	keyClose       uint16
 	keyChangeFocus uint16
 	keyBackspace   uint16
-	screenState    [][]termbox.Cell
+
+	defaultBackgroundColor termbox.Attribute
+	defaultForegroundColor termbox.Attribute
+
+	screenState [][]termbox.Cell
 }
 
-func NewDrawer(keyEnter, keyClose, keyChangeFocus, keyBackspace uint16) Drawer {
-	return Drawer{
-		keyEnter:       keyEnter,
-		keyClose:       keyClose,
-		keyChangeFocus: keyChangeFocus,
-		keyBackspace:   keyBackspace,
+func NewDrawer(keyEnter, keyClose, keyChangeFocus, keyBackspace uint16, colorsAdapter dto.ColorsAdapterIface) Drawer {
+	colors := colorsAdapter.GetColors()
+
+	r := Drawer{
+		keyEnter:               keyEnter,
+		keyClose:               keyClose,
+		keyChangeFocus:         keyChangeFocus,
+		keyBackspace:           keyBackspace,
+		defaultBackgroundColor: colors.DefaultBackgroundColor,
+		defaultForegroundColor: colors.DefaultForegroundColor,
 	}
+
+	return r
 }
 
 func (d *Drawer) Draw(sw pseudo_graphics.PWindow, im pseudo_graphics.InputManager, doneChan chan struct{}) error {
@@ -72,22 +83,21 @@ func (d *Drawer) Draw(sw pseudo_graphics.PWindow, im pseudo_graphics.InputManage
 }
 
 func (d *Drawer) redrawAll(sw pseudo_graphics.PWindow) error {
-	const coldef = termbox.ColorDefault
 	if err := termbox.Sync(); err != nil {
 		return err
 	}
 	globalWidth, globalHeight := termbox.Size()
 	for x := 0; x < globalWidth; x++ {
 		for y := 0; y < globalHeight; y++ {
-			termbox.SetCell(x, y, ' ', coldef, coldef)
+			termbox.SetCell(x, y, ' ', d.defaultForegroundColor, d.defaultBackgroundColor)
 		}
 	}
 
-	if err := termbox.Clear(coldef, coldef); err != nil {
+	if err := termbox.Clear(d.defaultForegroundColor, d.defaultBackgroundColor); err != nil {
 		return err
 	}
 
-	sw.Draw(0, 0, globalWidth, globalHeight)
+	sw.Draw(0, 0, globalWidth, globalHeight, d.defaultForegroundColor, d.defaultBackgroundColor)
 
 	if err := termbox.Flush(); err != nil {
 		return err
@@ -108,7 +118,7 @@ func (d *Drawer) saveScreenState(globalWidth, globalHeight int, get func(x, y in
 
 func (d *Drawer) restoreScreenState() {
 	termbox.Sync()
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	termbox.Clear(d.defaultForegroundColor, d.defaultBackgroundColor)
 	globalWidth, globalHeight := termbox.Size()
 	for x := 0; x < len(d.screenState) && x < globalWidth; x++ {
 		for y := 0; y < len(d.screenState[x]) && y < globalHeight; y++ {

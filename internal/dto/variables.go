@@ -9,6 +9,7 @@ type VariableSet struct {
 
 const (
 	VariableCurDir       Variable = "$CURDIR"
+	VariableCurDirShort  Variable = "$SCURDIR"
 	VariableLastExitCode Variable = "$?"
 	VariableCurrentUser  Variable = "$USER"
 	VariableHostname     Variable = "$HOSTNAME"

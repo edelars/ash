@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"ash/internal/commands"
+	"ash/internal/dto"
 	"ash/internal/io_manager/list"
 
 	"github.com/nsf/termbox-go"
@@ -17,12 +18,14 @@ const (
 )
 
 type inputManager struct {
-	cursorX                int
-	cursorY                int
-	manager                commands.CommandManagerIface
-	inputEventChan         chan termbox.Event
-	defaultBackgroundColor termbox.Attribute
-	defaultForegroundColor termbox.Attribute
+	cursorX        int
+	cursorY        int
+	manager        commands.CommandManagerIface
+	inputEventChan chan termbox.Event
+
+	defaultBackgroundColor  termbox.Attribute
+	defaultForegroundColor  termbox.Attribute
+	selectedForegroundColor termbox.Attribute
 }
 
 func (i *inputManager) Read(p []byte) (n int, err error) {
@@ -84,6 +87,7 @@ func (i *inputManager) Init() error {
 	}
 	termbox.SetInputMode(termbox.InputMouse)
 	termbox.SetOutputMode(termbox.OutputRGB)
+	termbox.Clear(i.defaultForegroundColor, i.defaultBackgroundColor)
 	return nil
 }
 
@@ -111,6 +115,7 @@ func (i *inputManager) Start() error {
 
 func (i *inputManager) redrawCursor() {
 	termbox.SetCursor(i.cursorX, i.cursorY)
+	termbox.SetFg(i.cursorX, i.cursorY, i.selectedForegroundColor)
 	termbox.Flush()
 }
 
@@ -180,15 +185,19 @@ func (i *inputManager) GetManager() commands.CommandManagerIface {
 	return i.manager
 }
 
-func NewInputManager(pm promptManager, remSymbCmdName string) *inputManager {
+func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.ColorsAdapterIface) *inputManager {
+	colors := colorsAdapter.GetColors()
+
 	im := inputManager{
-		inputEventChan:         make(chan termbox.Event),
-		defaultBackgroundColor: termbox.ColorDefault,
-		defaultForegroundColor: termbox.ColorDefault,
+		inputEventChan:          make(chan termbox.Event),
+		defaultForegroundColor:  colors.DefaultForegroundColor,
+		defaultBackgroundColor:  colors.DefaultBackgroundColor,
+		selectedForegroundColor: colors.SelectedForegroundColor,
 	}
 	im.manager = commands.NewCommandManager(constManagerName, 3, false,
 		list.NewRemoveLeftSymbol(remSymbCmdName, im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)
+
 	return &im
 }
 

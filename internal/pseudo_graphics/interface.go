@@ -7,7 +7,7 @@ type Drawer interface {
 }
 
 type PWindow interface {
-	Draw(x, y, w, h int)
+	Draw(x, y, w, h int, fg, bg termbox.Attribute)
 	KeyInput(key rune)
 	ChangeFocus()
 	RemoveLastInput()

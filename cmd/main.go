@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 
+	"ash/internal/colors_adapter"
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
 	"ash/internal/commands/managers/file_system"
@@ -38,6 +39,8 @@ func main() {
 	// load ENVs at start
 	envs_loader.LoadEnvs(cfg)
 
+	colorsAdapter := colors_adapter.NewColorsAdapter(cfg.Colors)
+
 	storage := sqlite_storage.NewSqliteStorage(cfg.Sqlite)
 	wg.Add(1)
 	go func() {
@@ -45,9 +48,9 @@ func main() {
 		errs <- storage.Run()
 	}()
 
-	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt)
+	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt, colorsAdapter)
 
-	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol)
+	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter)
 	if err := inputManager.Init(); err != nil {
 		fmt.Println(err)
 	}
@@ -62,6 +65,7 @@ func main() {
 		cfg.GetKeyBind(configuration.CmdClose),
 		cfg.GetKeyBind(configuration.CmdAutocomplete),
 		cfg.GetKeyBind(configuration.CmdRemoveLeftSymbol),
+		colorsAdapter,
 	)
 
 	// managers init
@@ -74,7 +78,7 @@ func main() {
 		promptGenerator.GetUserInputFunc(),
 		cfg.Autocomplete,
 		storage.SaveData,
-		cfg.Colors,
+		colorsAdapter,
 	)
 	commandRouter.AddNewCommandManager(actionManager)
 	// done managers init

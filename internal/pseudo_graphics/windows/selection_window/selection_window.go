@@ -4,7 +4,6 @@ import (
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
-	"github.com/go-playground/colors"
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
@@ -29,12 +28,14 @@ type selectionWindow struct {
 	columnDescriptionMaxWid int
 	columnGap               int
 
-	defaultBackgroundColor termbox.Attribute
-	defaultForegroundColor termbox.Attribute
-	sourceBackgroundColor  termbox.Attribute
-	sourceForegroundColor  termbox.Attribute
-	srKeyBackgroundColor   termbox.Attribute
-	srKeyForegroundColor   termbox.Attribute
+	defaultBackgroundColor   termbox.Attribute
+	defaultForegroundColor   termbox.Attribute
+	sourceBackgroundColor    termbox.Attribute
+	sourceForegroundColor    termbox.Attribute
+	resultKeyBackgroundColor termbox.Attribute
+	resultKeyForegroundColor termbox.Attribute
+	selectedForegroundColor  termbox.Attribute
+	descriptionText          termbox.Attribute
 
 	focused      bool
 	dataSources  dto.DataSource
@@ -46,15 +47,25 @@ type selectionWindow struct {
 	showCommandDescription bool
 }
 
-func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), autocomplOpts configuration.AutocompleteOpts, colorsOpts configuration.Colors) selectionWindow {
+func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.DataSource, resultFunc func(cmd dto.CommandIface, userInput []rune), autocomplOpts configuration.AutocompleteOpts, colorsAdapter dto.ColorsAdapterIface) selectionWindow {
+	colors := colorsAdapter.GetColors()
+
 	sw := selectionWindow{
-		focused:                autocomplOpts.InputFocusedByDefault,
-		symbolsMap:             map[rune]rune{},
-		currentInput:           userInput,
-		searchFunc:             searchFunc,
-		resultFunc:             resultFunc,
-		showCommandDescription: autocomplOpts.ShowFileInformation,
-		columnGap:              autocomplOpts.ColumnGap,
+		focused:                  autocomplOpts.InputFocusedByDefault,
+		symbolsMap:               map[rune]rune{},
+		currentInput:             userInput,
+		searchFunc:               searchFunc,
+		resultFunc:               resultFunc,
+		showCommandDescription:   autocomplOpts.ShowFileInformation,
+		columnGap:                autocomplOpts.ColumnGap,
+		defaultBackgroundColor:   colors.DefaultBackgroundColor,
+		defaultForegroundColor:   colors.DefaultForegroundColor,
+		sourceBackgroundColor:    colors.AutocompleteColors.SourceBackgroundColor,
+		sourceForegroundColor:    colors.AutocompleteColors.SourceForegroundColor,
+		resultKeyBackgroundColor: colors.AutocompleteColors.ResultKeyBackgroundColor,
+		resultKeyForegroundColor: colors.AutocompleteColors.ResultKeyForegroundColor,
+		selectedForegroundColor:  colors.SelectedForegroundColor,
+		descriptionText:          colors.AutocompleteColors.DescriptionText,
 	}
 	if runewidth.EastAsianWidth {
 		sw.symbolsMap = map[rune]rune{'─': '-', '│': '|', '┌': '+', '└': '+', '┐': '+', '┘': '+'}
@@ -62,35 +73,6 @@ func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.Dat
 		sw.symbolsMap = map[rune]rune{'─': '─', '│': '│', '┌': '┌', '└': '└', '┐': '┐', '┘': '┘'}
 	}
 
-	defaultBackgroundColor, err := colors.ParseHEX(colorsOpts.DefaultBackground)
-	if err == nil {
-		sw.defaultBackgroundColor = termbox.RGBToAttribute(defaultBackgroundColor.ToRGB().R, defaultBackgroundColor.ToRGB().G, defaultBackgroundColor.ToRGB().B)
-	}
-
-	defaultForegroundColor, err := colors.ParseHEX(colorsOpts.DefaultText)
-	if err == nil {
-		sw.defaultForegroundColor = termbox.RGBToAttribute(defaultForegroundColor.ToRGB().R, defaultForegroundColor.ToRGB().G, defaultForegroundColor.ToRGB().B)
-	}
-
-	sourceBackgroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceBackground)
-	if err == nil {
-		sw.sourceBackgroundColor = termbox.RGBToAttribute(sourceBackgroundColor.ToRGB().R, sourceBackgroundColor.ToRGB().G, sourceBackgroundColor.ToRGB().B)
-	}
-
-	sourceForegroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceText)
-	if err == nil {
-		sw.sourceForegroundColor = termbox.RGBToAttribute(sourceForegroundColor.ToRGB().R, sourceForegroundColor.ToRGB().G, sourceForegroundColor.ToRGB().B)
-	}
-
-	srKeyBackgroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceBackground)
-	if err == nil {
-		sw.srKeyBackgroundColor = termbox.RGBToAttribute(srKeyBackgroundColor.ToRGB().R, srKeyBackgroundColor.ToRGB().G, srKeyBackgroundColor.ToRGB().B)
-	}
-
-	srKeyForegroundColor, err := colors.ParseHEX(colorsOpts.AutocompleteColors.SourceText)
-	if err == nil {
-		sw.srKeyForegroundColor = termbox.RGBToAttribute(srKeyForegroundColor.ToRGB().R, srKeyForegroundColor.ToRGB().G, srKeyForegroundColor.ToRGB().B)
-	}
 	return sw
 }
 
@@ -147,9 +129,11 @@ func (sw *selectionWindow) setCursor(x, y int) {
 
 func (sw *selectionWindow) drawCursor() {
 	if sw.focused {
+		termbox.SetFg(sw.cursorX, sw.cursorY, sw.selectedForegroundColor)
 		termbox.SetCursor(sw.cursorX, sw.cursorY)
 	} else {
 		termbox.HideCursor()
+		termbox.SetFg(sw.cursorX, sw.cursorY, sw.defaultForegroundColor)
 	}
 }
 
@@ -167,7 +151,7 @@ func (sw *selectionWindow) calculateColumnsWidth(mainFieldMaxWid, descFieldMaxWi
 
 func (sw *selectionWindow) reDraw(clearScreen bool) {
 	if clearScreen {
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+		termbox.Clear(sw.defaultForegroundColor, sw.defaultBackgroundColor)
 	}
 	const bottomInputBarH = 2
 	const overheadSpaceForSource = 2
@@ -196,16 +180,20 @@ func (sw *selectionWindow) reDraw(clearScreen bool) {
 	curX := sw.mainX + 1
 	curY := sw.mainY + sw.mainH - 2
 
-	tbPrint(curX, curY, termbox.ColorDefault, termbox.ColorDefault, string(sw.currentInput))
+	tbPrint(curX, curY, sw.defaultForegroundColor, sw.defaultBackgroundColor, string(sw.currentInput))
 	curX = curX + len(sw.currentInput)
 	sw.setCursor(curX, curY)
 }
 
-func (sw *selectionWindow) Draw(x, y, w, h int) {
+func (sw *selectionWindow) Draw(x, y, w, h int, fg, bg termbox.Attribute) {
 	sw.mainX = x
 	sw.mainY = y
 	sw.mainW = w
 	sw.mainH = h
+
+	sw.defaultForegroundColor = fg
+	sw.defaultBackgroundColor = bg
+
 	sw.reDraw(false)
 }
 
@@ -230,7 +218,7 @@ func tbPrintWithHighlights(x, y int, fg, bg termbox.Attribute, msg string, patte
 	for _, c := range msg {
 		f := fg
 		if len(pattern) > patternCursor && c == pattern[patternCursor] {
-			f = f + termbox.AttrUnderline
+			f = f | termbox.AttrUnderline
 			patternCursor++
 		}
 		termbox.SetCell(x, y, c, f, bg)
@@ -246,10 +234,10 @@ func (sw *selectionWindow) drawRectangle(x, y, w, h int) {
 	sw.fill(x, y+1, 1, h-2, termbox.Cell{Ch: sw.getDrawSymbol('│')})     // left line
 	sw.fill(x+w-1, y+1, 1, h-2, termbox.Cell{Ch: sw.getDrawSymbol('│')}) // right line
 
-	termbox.SetCell(x, y, sw.getDrawSymbol('┌'), sw.defaultForegroundColor, sw.defaultForegroundColor)
-	termbox.SetCell(x, y+h-1, sw.getDrawSymbol('└'), sw.defaultForegroundColor, sw.defaultForegroundColor)
-	termbox.SetCell(x+w-1, y, sw.getDrawSymbol('┐'), sw.defaultForegroundColor, sw.defaultForegroundColor)
-	termbox.SetCell(x+w-1, y+h-1, sw.getDrawSymbol('┘'), sw.defaultForegroundColor, sw.defaultForegroundColor)
+	termbox.SetCell(x, y, sw.getDrawSymbol('┌'), sw.defaultForegroundColor, sw.defaultBackgroundColor)
+	termbox.SetCell(x, y+h-1, sw.getDrawSymbol('└'), sw.defaultForegroundColor, sw.defaultBackgroundColor)
+	termbox.SetCell(x+w-1, y, sw.getDrawSymbol('┐'), sw.defaultForegroundColor, sw.defaultBackgroundColor)
+	termbox.SetCell(x+w-1, y+h-1, sw.getDrawSymbol('┘'), sw.defaultForegroundColor, sw.defaultBackgroundColor)
 }
 
 func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
@@ -259,12 +247,12 @@ func (sw *selectionWindow) drawSource(x, y, w int, data dto.GetDataResult) int {
 
 	// draw items
 	for _, item := range data.Items {
-		xNew := tbPrint(x+1, y, sw.srKeyForegroundColor|termbox.AttrBold, sw.srKeyBackgroundColor, string(item.ButtonRune))
+		xNew := tbPrint(x+1, y, sw.resultKeyForegroundColor|termbox.AttrBold, sw.resultKeyBackgroundColor, string(item.ButtonRune))
 		xNew = tbPrint(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, " : ")
 		xNew = tbPrintWithHighlights(xNew, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, item.DisplayName, trimInput(sw.currentInput))
 		if sw.showCommandDescription && sw.columnDescriptionX > 0 && sw.columnDescriptionMaxWid > 0 {
 			desc := firstN(item.Description, sw.columnDescriptionMaxWid)
-			xNew = tbPrint(sw.columnDescriptionX+5, y, sw.defaultForegroundColor, sw.defaultBackgroundColor, desc)
+			xNew = tbPrint(sw.columnDescriptionX+5, y, sw.descriptionText, sw.defaultBackgroundColor, desc)
 		}
 		y++
 	}

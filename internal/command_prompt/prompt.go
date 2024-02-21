@@ -14,13 +14,24 @@ type CommandPrompt struct {
 	currentBuffer []rune
 	stopChan      chan struct{}
 	execAdapter   executionAdapter
+
+	defaultBackgroundColor termbox.Attribute
+	defaultForegroundColor termbox.Attribute
 }
 
-func NewCommandPrompt(template string) CommandPrompt {
+func NewCommandPrompt(template string, colorsAdapter dto.ColorsAdapterIface) CommandPrompt {
 	if template == "" {
 		template = `[{"value": "ash> ", "bold": true}]`
 	}
-	return CommandPrompt{template: parsePromptConfigString([]byte(template)), stopChan: make(chan struct{})}
+	colors := colorsAdapter.GetColors()
+
+	r := CommandPrompt{
+		template: parsePromptConfigString([]byte(template)), stopChan: make(chan struct{}),
+		defaultBackgroundColor: colors.DefaultBackgroundColor,
+		defaultForegroundColor: colors.DefaultForegroundColor,
+	}
+
+	return r
 }
 
 // For cases when user input update needed

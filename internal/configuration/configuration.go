@@ -37,8 +37,9 @@ type ConfigLoader struct {
 }
 
 type Colors struct {
-	DefaultText       string `yaml:"defaultText"`
-	DefaultBackground string `yaml:"defaultBackground"`
+	DefaultText             string `yaml:"defaultText"`
+	DefaultBackground       string `yaml:"defaultBackground"`
+	SelectedForegroundColor string `yaml:"selectedForegroundColor"`
 
 	AutocompleteColors AutocompleteColors `yaml:"autocomplete"`
 }
@@ -48,6 +49,7 @@ type AutocompleteColors struct {
 	SourceBackground string `yaml:"sourceBackground"`
 	ResultKeyText    string `yaml:"resultKeyText"`
 	ResultBackground string `yaml:"resultBackground"`
+	DescriptionText  string `yaml:"descriptionText"`
 }
 
 type AutocompleteOpts struct {
@@ -120,11 +122,13 @@ func newConfigLoaderWithDefaults() ConfigLoader {
 		Prompt: "ASH- ",
 		Colors: Colors{
 			DefaultText: "none", DefaultBackground: "none",
+			SelectedForegroundColor: "#f5e0dc",
 			AutocompleteColors: AutocompleteColors{
 				SourceText:       "none",
 				SourceBackground: "#8ec07c",
 				ResultKeyText:    "none",
 				ResultBackground: "#fabd2f",
+				DescriptionText:  "none",
 			},
 		},
 		Autocomplete: AutocompleteOpts{

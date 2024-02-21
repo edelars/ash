@@ -3,6 +3,7 @@ package io_manager
 import (
 	"testing"
 
+	"ash/internal/colors_adapter"
 	"ash/internal/configuration"
 
 	"github.com/nsf/termbox-go"
@@ -17,7 +18,7 @@ func (pmimpl *pmImpl) DeleteLastSymbolFromCurrentBuffer() error {
 
 func Test_inputManager_rollScreenUp(t *testing.T) {
 	pm := pmImpl{}
-	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol)
+	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}))
 
 	// y,  x
 	screen := [][]termbox.Cell{

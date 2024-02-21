@@ -9,7 +9,7 @@ import (
 	"ash/internal/pseudo_graphics/windows/selection_window"
 )
 
-func NewAutocompleteCommand(cmdName string, dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune), autocomplOpts configuration.AutocompleteOpts, colorOpts configuration.Colors) *commands.Command {
+func NewAutocompleteCommand(cmdName string, dr pseudo_graphics.Drawer, searchFunc func(iContext dto.InternalContextIface, pattern dto.PatternIface) []dto.CommandManagerSearchResult, setInputFunc func(r []rune), autocomplOpts configuration.AutocompleteOpts, colorsAdapter dto.ColorsAdapterIface) *commands.Command {
 	return commands.NewCommand(cmdName,
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			doneChan := make(chan struct{}, 1)
@@ -30,7 +30,7 @@ func NewAutocompleteCommand(cmdName string, dr pseudo_graphics.Drawer, searchFun
 				cmdChan <- cmd
 			}
 
-			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc, autocomplOpts, colorOpts)
+			pWindow := selection_window.NewSelectionWindow(iContext.GetCurrentInputBuffer(), sFunc, rFunc, autocomplOpts, colorsAdapter)
 			dr.Draw(&pWindow, iContext, doneChan)
 			if cmd := <-cmdChan; cmd != nil {
 				return cmd.GetExecFunc()(iContext, nil)

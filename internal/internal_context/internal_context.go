@@ -3,6 +3,7 @@ package internal_context
 import (
 	"io"
 	"os"
+	"path/filepath"
 
 	"ash/internal/dto"
 
@@ -26,6 +27,9 @@ func (i InternalContext) GetVariable(v dto.Variable) string {
 	switch v {
 	case dto.VariableCurDir:
 		return i.GetCurrentDir()
+	case dto.VariableCurDirShort:
+		s := filepath.Base(i.GetCurrentDir())
+		return s
 	default:
 		s, _ := i.variables[v]
 		return s
