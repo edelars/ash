@@ -215,3 +215,58 @@ func Test_trimInput(t *testing.T) {
 		})
 	}
 }
+
+func Test_trimInputSuffix(t *testing.T) {
+	type args struct {
+		input []rune
+	}
+	tests := []struct {
+		name string
+		args args
+		want []rune
+	}{
+		{
+			name: "ls /usr",
+			args: args{
+				input: []rune("ls /usr"),
+			},
+			want: []rune("ls "),
+		},
+		{
+			name: "ls /usr /srt sst -l s",
+			args: args{
+				input: []rune("ls /usr /srt sst -l s"),
+			},
+			want: []rune("ls /usr /srt sst -l "),
+		},
+
+		{
+			name: "ls",
+			args: args{
+				input: []rune("ls"),
+			},
+			want: []rune("ls "),
+		},
+		{
+			name: "ls ",
+			args: args{
+				input: []rune("ls "),
+			},
+			want: []rune("ls "),
+		},
+		{
+			name: "empty",
+			args: args{
+				input: []rune(""),
+			},
+			want: []rune(""),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := trimInputSuffix(tt.args.input); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("trimInputSuffix() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

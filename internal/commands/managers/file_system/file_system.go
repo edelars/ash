@@ -52,18 +52,6 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 		filesResults := getFileNamesInDirs(paths, false, getFileNamesInDir)
 		filesResults = append(filesResults, getFileNamesInDirs([]string{iContext.GetCurrentDir()}, true, getFileNamesInDir)...)
 
-		if !pattern.IsPrecisionSearch() {
-			for _, item := range findPathsByPrefixPath(pattern.GetPattern()) {
-				s := constFileDisplay
-				if item.isDir {
-					s = constDirDisplay
-				}
-				c := commands.NewPseudoCommand(item.name, m.inputSet, generateDescription(s, item.info), item.name)
-				c.SetMathWeight(100)
-				data = append(data, c)
-			}
-		}
-
 		for _, fileResItem := range filesResults {
 			for _, fInfo := range fileResItem.files {
 				if pattern.IsPrecisionSearch() { // exec
@@ -77,6 +65,19 @@ func (m *fileSystemManager) SearchCommands(iContext dto.InternalContextIface, re
 				}
 			}
 		}
+
+		if !pattern.IsPrecisionSearch() {
+			for _, item := range findPathsByPrefixPath(pattern.GetPattern()) {
+				s := constFileDisplay
+				if item.isDir {
+					s = constDirDisplay
+				}
+				c := commands.NewEmptyCommand(item.name, generateDescription(s, item.info), item.name)
+				c.SetMathWeight(100)
+				data = append(data, c)
+			}
+		}
+
 	}
 }
 

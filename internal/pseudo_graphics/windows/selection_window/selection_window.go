@@ -37,12 +37,13 @@ type selectionWindow struct {
 	selectedForegroundColor  termbox.Attribute
 	descriptionText          termbox.Attribute
 
-	focused      bool
-	dataSources  dto.DataSource
-	symbolsMap   map[rune]rune
-	currentInput []rune
-	searchFunc   func(patter []rune) dto.DataSource
-	resultFunc   func(cmd dto.CommandIface, userInput []rune)
+	focused            bool
+	needToUpdateSource bool
+	dataSources        dto.DataSource
+	symbolsMap         map[rune]rune
+	currentInput       []rune
+	searchFunc         func(patter []rune) dto.DataSource
+	resultFunc         func(cmd dto.CommandIface, userInput []rune)
 
 	showCommandDescription bool
 }
@@ -58,6 +59,7 @@ func NewSelectionWindow(userInput []rune, searchFunc func(patter []rune) dto.Dat
 		resultFunc:               resultFunc,
 		showCommandDescription:   autocomplOpts.ShowFileInformation,
 		columnGap:                autocomplOpts.ColumnGap,
+		needToUpdateSource:       true,
 		defaultBackgroundColor:   colors.DefaultBackgroundColor,
 		defaultForegroundColor:   colors.DefaultForegroundColor,
 		sourceBackgroundColor:    colors.AutocompleteColors.SourceBackgroundColor,
@@ -83,9 +85,10 @@ func (sw *selectionWindow) Close() {
 // Trim to last word ie: "ls /usr" to "/usr"
 func trimInput(input []rune) []rune {
 	var lastSpacePos int
-	for i := 0; i < len(input); i++ {
+	for i := len(input) - 1; i >= 0; i-- {
 		if input[i] == 32 {
 			lastSpacePos = i
+			break
 		}
 	}
 	if lastSpacePos > 0 && len(input) > lastSpacePos {
@@ -97,21 +100,48 @@ func trimInput(input []rune) []rune {
 	return input
 }
 
+// Trim last word ie: "ls /usr" to "ls "
+func trimInputSuffix(input []rune) []rune {
+	var lastSpacePos int
+	for i := len(input) - 1; i >= 0; i-- {
+		if input[i] == 32 {
+			lastSpacePos = i
+			break
+		}
+	}
+	if lastSpacePos > 0 {
+		return input[:lastSpacePos+1]
+	}
+	if len(input) > 0 && input[len(input)-1] != 32 { // add space
+		input = append(input, 32)
+	}
+	return input
+}
+
 func (sw *selectionWindow) updateDataSource() {
-	sw.dataSources = sw.searchFunc(trimInput(sw.currentInput))
+	if sw.needToUpdateSource {
+		sw.needToUpdateSource = false
+		sw.dataSources = sw.searchFunc(trimInput(sw.currentInput))
+	}
 }
 
 func (sw *selectionWindow) KeyInput(key rune) {
 	if sw.focused {
 		sw.currentInput = append(sw.currentInput, rune(key))
-		sw.reDraw(true)
+		sw.needToUpdateSource = true
 	} else {
 		sw.commandChoosed(key)
 	}
 }
 
 func (sw *selectionWindow) commandChoosed(key rune) {
-	if cmd := sw.dataSources.GetCommand(key); cmd != nil {
+	cmd := sw.dataSources.GetCommand(key)
+	switch cmd.GetExecFunc() { // just change userInput. No execute
+	case nil:
+		withoutSuffix := trimInputSuffix(sw.currentInput)
+		sw.currentInput = append(withoutSuffix, []rune(cmd.GetDisplayName())...)
+		sw.needToUpdateSource = true
+	default:
 		sw.resultFunc(cmd, sw.currentInput)
 	}
 }
@@ -149,10 +179,7 @@ func (sw *selectionWindow) calculateColumnsWidth(mainFieldMaxWid, descFieldMaxWi
 	}
 }
 
-func (sw *selectionWindow) reDraw(clearScreen bool) {
-	if clearScreen {
-		termbox.Clear(sw.defaultForegroundColor, sw.defaultBackgroundColor)
-	}
+func (sw *selectionWindow) reDraw() {
 	const bottomInputBarH = 2
 	const overheadSpaceForSource = 2
 
@@ -194,7 +221,7 @@ func (sw *selectionWindow) Draw(x, y, w, h int, fg, bg termbox.Attribute) {
 	sw.defaultForegroundColor = fg
 	sw.defaultBackgroundColor = bg
 
-	sw.reDraw(false)
+	sw.reDraw()
 }
 
 func (sw *selectionWindow) fill(x, y, w, h int, cell termbox.Cell) {

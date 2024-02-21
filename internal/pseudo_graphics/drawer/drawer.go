@@ -47,7 +47,6 @@ func (d *Drawer) Draw(sw pseudo_graphics.PWindow, im pseudo_graphics.InputManage
 		return err
 	}
 	for {
-
 		select {
 		case <-doneChan:
 			return nil
