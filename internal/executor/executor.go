@@ -54,9 +54,9 @@ func (r *commandExecutor) prepareExecutionList(iContext dto.InternalContextIface
 		switch len(cmsr) {
 		default:
 			commands := cmsr[0].GetCommands()
-			if len(commands) != 1 {
-				return iContext, fmt.Errorf("%w : %s commands: %d", errTooManyCmdFounds, pattern.GetPattern(), len(commands))
-			}
+			// if len(commands) != 1 {
+			// return iContext, fmt.Errorf("%w : %s commands: %d", errTooManyCmdFounds, pattern.GetPattern(), len(commands))
+			// }
 			executionList = append(executionList, commands[0].WithArgs(splitArgsStringToArr(argsArr[counter])))
 		case 0:
 			return iContext, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())

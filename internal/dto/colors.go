@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/nsf/termbox-go"
+import "ash/pkg/termbox"
 
 type ColorsAdapterIface interface {
 	GetColors() Colors

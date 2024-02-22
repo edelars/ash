@@ -4,8 +4,9 @@ import (
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
+	"ash/pkg/termbox"
+
 	"github.com/go-playground/colors"
-	"github.com/nsf/termbox-go"
 )
 
 type colorsAdapter struct {

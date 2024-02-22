@@ -8,8 +8,7 @@ import (
 	"ash/internal/commands"
 	"ash/internal/dto"
 	"ash/internal/io_manager/list"
-
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 const (
@@ -20,6 +19,7 @@ const (
 type inputManager struct {
 	cursorX        int
 	cursorY        int
+	terminateKey   uint16
 	manager        commands.CommandManagerIface
 	inputEventChan chan termbox.Event
 
@@ -48,20 +48,17 @@ func (i *inputManager) Read(p []byte) (n int, err error) {
 
 func (i *inputManager) Write(p []byte) (n int, err error) {
 	termbox.Sync()
-	var t int
 
 	for _, r := range bytes.Runes(p) {
-		if r == rune('\r') {
-			t++
+		if r == 13 { // /r
 			continue
 		}
-		if r == rune('\t') {
+		if r == 9 { // /t
 			i.cursorX += 8
 			continue
 		}
 
-		if r == rune('\n') {
-			t++
+		if r == 10 { // /n
 			w, h := termbox.Size()
 			i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
 			i.cursorX = 0
@@ -91,11 +88,13 @@ func (i *inputManager) Init() error {
 	return nil
 }
 
-func (i *inputManager) Start() error {
+func (i *inputManager) Start(execTerminateChan chan struct{}) error {
 	defer termbox.Close()
 	defer close(i.inputEventChan)
 
 	i.moveCursorAtStartPostion()
+
+mainLoop:
 	for {
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventResize:
@@ -107,6 +106,15 @@ func (i *inputManager) Start() error {
 			return ev.Err
 		case termbox.EventInterrupt:
 			return errors.New("got EventInterrupt, exiting")
+		case termbox.EventKey:
+			if ev.Ch == 0 {
+				switch ev.Key {
+				case termbox.Key(i.terminateKey):
+					execTerminateChan <- struct{}{}
+					continue mainLoop
+				}
+			}
+			i.inputEventChan <- ev
 		default:
 			i.inputEventChan <- ev
 		}
@@ -148,10 +156,10 @@ func (i *inputManager) moveCursorAtStartPostion() {
 }
 
 func (i *inputManager) printSymbol(c termbox.Cell) {
-	if c.Ch == rune('\r') {
+	if c.Ch == 13 { // /r
 		return
 	}
-	if c.Ch == rune('\n') {
+	if c.Ch == 10 { // /n
 		w, h := termbox.Size()
 		i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
 		i.moveCursorAtStartPostion()
@@ -185,11 +193,12 @@ func (i *inputManager) GetManager() commands.CommandManagerIface {
 	return i.manager
 }
 
-func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.ColorsAdapterIface) *inputManager {
+func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.ColorsAdapterIface, terminateKey uint16) *inputManager {
 	colors := colorsAdapter.GetColors()
 
 	im := inputManager{
 		inputEventChan:          make(chan termbox.Event),
+		terminateKey:            terminateKey,
 		defaultForegroundColor:  colors.DefaultForegroundColor,
 		defaultBackgroundColor:  colors.DefaultBackgroundColor,
 		selectedForegroundColor: colors.SelectedForegroundColor,

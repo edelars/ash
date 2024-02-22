@@ -7,13 +7,14 @@ import (
 
 	"ash/internal/dto"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type InternalContext struct {
 	currentKeyPressed  uint16
 	inputManager       inputManagerIface
 	errsChan           chan error
+	execTerminateChan  chan struct{}
 	outputWriter       io.Writer
 	inputReader        io.Reader
 	currentInputBuffer []rune
@@ -57,15 +58,23 @@ type inputManagerIface interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(im inputManagerIface, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader, printCellFunc func(c []termbox.Cell)) *InternalContext {
+func NewInternalContext(im inputManagerIface,
+	errs chan error,
+	printFunc func(msg string),
+	outputWriter io.Writer,
+	inputReader io.Reader,
+	printCellFunc func(c []termbox.Cell),
+	execTerminateChan chan struct{},
+) *InternalContext {
 	return &InternalContext{
-		inputManager:  im,
-		errsChan:      errs,
-		printFunc:     printFunc,
-		outputWriter:  outputWriter,
-		inputReader:   inputReader,
-		printCellFunc: printCellFunc,
-		variables:     make(map[dto.Variable]string),
+		inputManager:      im,
+		errsChan:          errs,
+		printFunc:         printFunc,
+		outputWriter:      outputWriter,
+		inputReader:       inputReader,
+		printCellFunc:     printCellFunc,
+		variables:         make(map[dto.Variable]string),
+		execTerminateChan: execTerminateChan,
 	}
 }
 
@@ -127,4 +136,8 @@ func (i InternalContext) GetOutputWriter() io.Writer {
 
 func (i InternalContext) GetInputReader() io.Reader {
 	return i.inputReader
+}
+
+func (i InternalContext) GetExecTerminateChan() chan struct{} {
+	return i.execTerminateChan
 }

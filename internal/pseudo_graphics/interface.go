@@ -1,6 +1,6 @@
 package pseudo_graphics
 
-import "github.com/nsf/termbox-go"
+import "ash/pkg/termbox"
 
 type Drawer interface {
 	Draw(sw PWindow, im InputManager, doneChan chan struct{}) error

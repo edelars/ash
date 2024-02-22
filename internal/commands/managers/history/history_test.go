@@ -8,7 +8,8 @@ import (
 	"ash/internal/dto"
 	"ash/internal/storage"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,10 +20,13 @@ func Test_historyManager_convertStorageItems(t *testing.T) {
 	assert.Equal(t, 2, len(res))
 	assert.Equal(t, "cmd1", res[0].GetName())
 	assert.Equal(t, "cmd1", res[0].GetDisplayName())
+	assert.Equal(t, uint8(0), res[0].GetMathWeight())
+
 	assert.Equal(t, generateDescription("dir1", 2), res[0].GetDescription())
 
 	assert.Equal(t, "cmd2", res[1].GetName())
 	assert.Equal(t, "cmd2", res[1].GetDisplayName())
+	assert.Equal(t, uint8(1), res[1].GetMathWeight())
 	assert.Equal(t, generateDescription("dir2", 3), res[1].GetDescription())
 
 	res = h.convertStorageItems(nil)
@@ -92,6 +96,11 @@ func (storageimpl *storageImpl) GetTopHistoryByPattern(prefix string, l int) []s
 }
 
 type contImpl struct{}
+
+// ctrl-c - break app
+func (contimpl *contImpl) GetExecTerminateChan() chan struct{} {
+	panic("not implemented") // TODO: Implement
+}
 
 func (contimpl *contImpl) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {
 	panic("not implemented") // TODO: Implement

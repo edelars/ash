@@ -23,6 +23,7 @@ const (
 	CmdKeyDown  = ":ArrowKeyDown"
 	CmdKeyLeft  = ":ArrowKeyLeft"
 	CmdKeyRight = ":ArrowKeyRight"
+	CmdCtrlC    = ":TerminateCurrentTask"
 )
 
 type ConfigLoader struct {
@@ -118,6 +119,7 @@ func newConfigLoaderWithDefaults() ConfigLoader {
 			{65515, ":ArrowKeyLeft"},
 			{65516, ":ArrowKeyDown"},
 			{65517, ":ArrowKeyUp"},
+			{13, "TerminateCurrentTask"},
 		},
 		Prompt: "ASH- ",
 		Colors: Colors{
@@ -177,4 +179,22 @@ func (c ConfigLoader) GetEnvs() []string {
 
 func (c ConfigLoader) GetConfig() interface{} {
 	return c
+}
+
+func (c ConfigLoader) GetAliases() []struct {
+	Short string
+	Full  string
+} {
+	var res []struct {
+		Short string
+		Full  string
+	}
+
+	for _, alias := range c.Aliases {
+		res = append(res, struct {
+			Short string
+			Full  string
+		}{alias.Short, alias.Full})
+	}
+	return res
 }

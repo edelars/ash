@@ -7,8 +7,9 @@ import (
 
 	"ash/internal/dto"
 
+	"ash/pkg/termbox"
+
 	"github.com/go-playground/colors"
-	"github.com/nsf/termbox-go"
 )
 
 const constErrParse string = "error parse config>"

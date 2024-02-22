@@ -17,6 +17,8 @@ keybindings:
     action: ':ArrowKeyLeft'
   - key: 65514
     action: ':ArrowKeyRight'
+  - key: 3 
+    action: ':TerminateCurrentTask'
 
 aliases:
   - short: lg

@@ -4,8 +4,9 @@ import (
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
+	"ash/pkg/termbox"
+
 	"github.com/mattn/go-runewidth"
-	"github.com/nsf/termbox-go"
 )
 
 const (

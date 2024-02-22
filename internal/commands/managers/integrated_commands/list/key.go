@@ -6,7 +6,7 @@ import (
 	"ash/internal/commands"
 	"ash/internal/dto"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 const (
@@ -29,7 +29,7 @@ func NewKeyCommand() *commands.Command {
 						case 13:
 							return dto.CommandExecResultStatusOk
 						default:
-							iContext.GetPrintFunction()(fmt.Sprintf("got key: %d\n", ev.Key))
+							iContext.GetPrintFunction()(fmt.Sprintf("got key: %d, mod: %d\n", ev.Key, ev.Mod))
 						}
 					}
 				}

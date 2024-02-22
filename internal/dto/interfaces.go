@@ -3,7 +3,7 @@ package dto
 import (
 	"io"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type CommandRouterSearchResult interface {
@@ -76,4 +76,7 @@ type InternalContextIface interface {
 	GetInputReader() io.Reader
 	WithOutputWriter(io.Writer) InternalContextIface
 	WithInputReader(io.Reader) InternalContextIface
+
+	// ctrl-c - break app
+	GetExecTerminateChan() chan struct{}
 }

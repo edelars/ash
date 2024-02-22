@@ -6,7 +6,7 @@ import (
 	"ash/internal/dto"
 	"ash/internal/pseudo_graphics"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type Drawer struct {

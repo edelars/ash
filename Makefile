@@ -15,6 +15,9 @@ clean:
 test:
 	go test -race ./...
 
+test1:
+	go test -count=1 -race ./...
+
 buildold: clean test
 	go build -o ./${BUILD_DIR}/${APP} ./cmd/main.go
 

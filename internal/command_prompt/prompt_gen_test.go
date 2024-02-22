@@ -7,8 +7,9 @@ import (
 
 	"ash/internal/dto"
 
+	"ash/pkg/termbox"
+
 	"github.com/go-playground/colors"
-	"github.com/nsf/termbox-go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -170,6 +171,11 @@ func (exeimpl *exeImpl) ExecCmd(_ dto.InternalContextIface, cmd string) (string,
 
 type vstorImpl struct {
 	b bool
+}
+
+// ctrl-c - break app
+func (vstorimpl *vstorImpl) GetExecTerminateChan() chan struct{} {
+	panic("not implemented") // TODO: Implement
 }
 
 func (vstorimpl *vstorImpl) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {

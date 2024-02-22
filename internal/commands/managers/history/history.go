@@ -62,8 +62,12 @@ func (m *historyManager) SearchCommands(iContext dto.InternalContextIface, resul
 }
 
 func (m *historyManager) convertStorageItems(items []storage.StorageResult) (data []dto.CommandIface) {
-	for _, v := range items {
-		data = append(data, commands.NewPseudoCommand(v.GetCommand(), m.inputSet, generateDescription(v.GetDir(), v.GetUsedCount()), v.GetCommand()))
+	for c, v := range items {
+		newCmd := commands.NewPseudoCommand(v.GetCommand(), m.inputSet, generateDescription(v.GetDir(), v.GetUsedCount()), v.GetCommand())
+		if c < 255 {
+			newCmd.SetMathWeight(uint8(c))
+		}
+		data = append(data, newCmd)
 	}
 	return data
 }

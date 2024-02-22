@@ -3,6 +3,7 @@ package sqlite_storage
 import (
 	"os"
 	"testing"
+	"time"
 
 	"ash/internal/commands"
 	"ash/internal/configuration"
@@ -158,6 +159,7 @@ func Test_sqliteStorage_SaveData(t *testing.T) {
 
 	h.SaveData(internal_context.InternalContext{}.WithExecutionList([]dto.CommandIface{commands.NewCommand("ls", nil, false)}))
 
+	time.Sleep(100 * time.Millisecond)
 	rows, err := h.db.Query("select lastUsedTime from history")
 
 	assert.NoError(t, err)

@@ -59,6 +59,7 @@ func Test_newConfigLoaderWithDefaults(t *testing.T) {
 					{65515, ":ArrowKeyLeft"},
 					{65516, ":ArrowKeyDown"},
 					{65517, ":ArrowKeyUp"},
+					{13, "TerminateCurrentTask"},
 				},
 				Prompt: "ASH- ",
 				Colors: Colors{

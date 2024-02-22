@@ -10,6 +10,7 @@ import (
 	"ash/internal/colors_adapter"
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
+	"ash/internal/commands/managers/aliases"
 	"ash/internal/commands/managers/file_system"
 	"ash/internal/commands/managers/history"
 	integrated "ash/internal/commands/managers/integrated_commands"
@@ -50,7 +51,10 @@ func main() {
 
 	promptGenerator := command_prompt.NewCommandPrompt(cfg.Prompt, colorsAdapter)
 
-	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter)
+	execTerminateChan := make(chan struct{})
+	defer close(execTerminateChan)
+
+	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter, cfg.GetKeyBind(configuration.CmdCtrlC))
 	if err := inputManager.Init(); err != nil {
 		fmt.Println(err)
 	}
@@ -58,7 +62,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- inputManager.Start()
+		errs <- inputManager.Start(execTerminateChan)
 	}()
 
 	guiDrawer := drawer.NewDrawer(cfg.GetKeyBind(configuration.CmdExecute),
@@ -88,10 +92,14 @@ func main() {
 		inputManager,
 		inputManager,
 		inputManager.GetCellsPrintFunction(),
+		execTerminateChan,
 	).WithVariables(variables.GetVariables())
 
 	keyBindingsManager := keys_bindings.NewKeyBindingsManager(internalContext, cfg, &commandRouter)
 	exec := executor.NewCommandExecutor(&commandRouter, keyBindingsManager)
+
+	aliasManager := aliases.NewAliasesManager(cfg, &exec, cfg.GetKeyBind(configuration.CmdExecute), internalContext)
+	commandRouter.AddNewCommandManager(aliasManager)
 
 	wg.Add(1)
 	go func() {

@@ -8,7 +8,6 @@ require (
 	github.com/kirsle/configdir v0.0.0-20170128060238-e45d2f54772f
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/nsf/termbox-go v1.1.1
 	github.com/stretchr/testify v1.8.4
 	github.com/zenthangplus/goccm v1.1.3
 	gopkg.in/yaml.v3 v3.0.1

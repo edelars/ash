@@ -26,9 +26,6 @@ func execCmd(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, c
 	mWriter := io.MultiWriter(secondWriter, w)
 	newIC := iContext.WithInputReader(r).WithOutputWriter(mWriter)
 	st.code = cmd.GetExecFunc()(newIC, cmd.GetArgs())
-	if st.code != dto.CommandExecResultStatusOk {
-		st.output = secondWriter.Bytes()
-	}
 	w.Close()
 
 	return
@@ -111,7 +108,6 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 	}()
 
 	res := dto.CommandExecResultStatusOk
-	var doneBuf []byte
 
 mainLoop:
 	for {
@@ -119,6 +115,7 @@ mainLoop:
 		case st := <-resChan:
 			if st.code != dto.CommandExecResultStatusOk && res == dto.CommandExecResultStatusOk {
 				iContext.GetOutputWriter().Write(st.output)
+				iContext.GetOutputWriter().Write([]byte{0x0A}) // /n
 				res = st.code
 			}
 			wg.Done()
@@ -132,14 +129,11 @@ mainLoop:
 				if err == io.EOF {
 					break readLoop
 				}
-				doneBuf = append(doneBuf, buf[:n]...)
+				iContext.GetOutputWriter().Write(buf[:n])
 			}
 		}
 	}
 
-	if res == dto.CommandExecResultStatusOk {
-		iContext.GetOutputWriter().Write(doneBuf)
-	}
 	return res
 }
 

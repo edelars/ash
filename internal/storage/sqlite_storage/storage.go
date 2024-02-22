@@ -244,9 +244,9 @@ func (s *sqliteStorage) cleanupOldAllData() error {
 
 func (s *sqliteStorage) GetTopHistoryByDirs(currentDir string, limit int) (res []storage.StorageResult) {
 	// sqlite cant unions when order or limit sets..
-	query := `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir = ? order by usedCounter desc limit ?`
+	query := `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir = ? order by usedCounter limit ?`
 	res = s.getTopHistory(query, currentDir, limit/2)
-	query = `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir != ? order by usedCounter desc limit ?`
+	query = `select  lastUsedTime,usedCounter,dir,execWithArgs from history  where dir != ? order by usedCounter limit ?`
 	res = append(res, s.getTopHistory(query, currentDir, limit/2)...)
 	return res
 }

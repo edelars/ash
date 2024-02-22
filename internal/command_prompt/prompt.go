@@ -6,7 +6,7 @@ import (
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type CommandPrompt struct {
@@ -102,6 +102,7 @@ mainLoop:
 						lastExitStatus = r
 						// iContext.GetPrintFunction()("\n")
 					}
+					termbox.Sync()
 					promptChan <- struct{}{}
 				}
 			}
