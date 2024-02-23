@@ -52,9 +52,7 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 	lastReaderPipe = readerPipe1
 
 	doneChan := make(chan struct{}, 1)
-
 	returnChan := make(chan struct{})
-
 	resChan := make(chan stResult, len(cmds))
 
 	defer func() {

@@ -26,7 +26,7 @@ aliases:
 prompt: '[{"value": "$SCURDIR", "color":"#f38ba8"},{"value": ">", "color":"#a6e3a1", "bold": true}]'
 envs:
   - >-
-    $PATH=/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/go/bin:/opt/homebrew/bin:/opt/homebrew/sbin:  
+    $PATH=./:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/go/bin:/opt/homebrew/bin:/opt/homebrew/sbin:  
   - GOROOT=/Users/senya/go
 
 colors:
@@ -43,3 +43,7 @@ colors:
 
 autocomplete:
   showFileInformation: true
+
+sqlite:
+  maxHistoryPerDir: 100
+  cleanupInterval: 600

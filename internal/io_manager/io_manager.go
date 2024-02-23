@@ -2,8 +2,8 @@ package io_manager
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
-	"io"
 
 	"ash/internal/commands"
 	"ash/internal/dto"
@@ -22,27 +22,45 @@ type inputManager struct {
 	terminateKey   uint16
 	manager        commands.CommandManagerIface
 	inputEventChan chan termbox.Event
+	inputBuffer    []byte
 
 	defaultBackgroundColor  termbox.Attribute
 	defaultForegroundColor  termbox.Attribute
 	selectedForegroundColor termbox.Attribute
 }
 
-func (i *inputManager) Read(p []byte) (n int, err error) {
+func (i *inputManager) Read(res []byte) (n int, err error) {
+	// if last byte is \n - push our buffer out
+	if len(i.inputBuffer) > 0 && i.inputBuffer[len(i.inputBuffer)-1:][0] == []byte{0x0A}[0] {
+		n := copy(res, i.inputBuffer)
+		i.inputBuffer = i.inputBuffer[n:]
+		return n, nil
+	}
+
 	select {
 	case ev := <-i.inputEventChan:
 		switch ev.Type {
-		case termbox.EventKey:
-			if ev.Ch != 0 {
-				n = copy(p, []byte{byte(ev.Ch)})
-			} else {
-				n = copy(p, []byte{byte(ev.Key)})
+		case termbox.EventKey: // k 0 ch 19
+			l := make([]byte, 4)
+			switch ev.Ch {
+			case 0: // extra keys like enter
+				binary.BigEndian.PutUint32(l[0:4], uint32(ev.Key))
+				if ev.Key == 10 {
+					i.inputBuffer = append(i.inputBuffer, bytes.TrimLeft(l[0:4], "\x00")...)
+					n := copy(res, i.inputBuffer)
+					i.inputBuffer = i.inputBuffer[n:]
+					return n, nil
+				}
+			default: // simple buttons
+				binary.BigEndian.PutUint32(l[0:4], uint32(ev.Ch))
 			}
-			return n, nil
+			i.inputBuffer = append(i.inputBuffer, bytes.TrimLeft(l[0:4], "\x00")...)
+			return 0, nil
+		default:
+			return 0, nil
 		}
-		return 0, io.EOF
 	default:
-		return 0, io.EOF
+		return 0, nil
 	}
 }
 
@@ -50,9 +68,15 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 	termbox.Sync()
 
 	for _, r := range bytes.Runes(p) {
-		if r == 13 { // /r
+		if r == 13 {
+			panic("rr") // /r
 			continue
 		}
+		if r == 127 {
+			panic(127) // /e
+			continue
+		}
+
 		if r == 9 { // /t
 			i.cursorX += 8
 			continue
