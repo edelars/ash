@@ -17,12 +17,14 @@ const (
 )
 
 type inputManager struct {
+	echoInput      bool
 	cursorX        int
 	cursorY        int
 	terminateKey   uint16
 	manager        commands.CommandManagerIface
 	inputEventChan chan termbox.Event
 	inputBuffer    []byte
+	echoPrintFunc  func(b []byte)
 
 	defaultBackgroundColor  termbox.Attribute
 	defaultForegroundColor  termbox.Attribute
@@ -36,6 +38,12 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 		i.inputBuffer = i.inputBuffer[n:]
 		return n, nil
 	}
+	var iBytes []byte
+	defer func() {
+		if len(iBytes) > 0 {
+			i.echoPrintFunc(iBytes)
+		}
+	}()
 
 	select {
 	case ev := <-i.inputEventChan:
@@ -45,8 +53,9 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 			switch ev.Ch {
 			case 0: // extra keys like enter
 				binary.BigEndian.PutUint32(l[0:4], uint32(ev.Key))
-				if ev.Key == 10 {
-					i.inputBuffer = append(i.inputBuffer, bytes.TrimLeft(l[0:4], "\x00")...)
+				if ev.Key == 13 || ev.Key == 10 {
+					iBytes = []byte{0x0A} // always is 10 or 0x0A
+					i.inputBuffer = append(i.inputBuffer, iBytes...)
 					n := copy(res, i.inputBuffer)
 					i.inputBuffer = i.inputBuffer[n:]
 					return n, nil
@@ -54,7 +63,8 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 			default: // simple buttons
 				binary.BigEndian.PutUint32(l[0:4], uint32(ev.Ch))
 			}
-			i.inputBuffer = append(i.inputBuffer, bytes.TrimLeft(l[0:4], "\x00")...)
+			iBytes = bytes.TrimLeft(l[0:4], "\x00")
+			i.inputBuffer = append(i.inputBuffer, iBytes...)
 			return 0, nil
 		default:
 			return 0, nil
@@ -69,11 +79,9 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 
 	for _, r := range bytes.Runes(p) {
 		if r == 13 {
-			panic("rr") // /r
 			continue
 		}
 		if r == 127 {
-			panic(127) // /e
 			continue
 		}
 
@@ -93,8 +101,14 @@ func (i *inputManager) Write(p []byte) (n int, err error) {
 		i.cursorX++
 
 	}
-	termbox.Flush()
+	i.redrawCursor()
 	return len(p), nil
+}
+
+func (i *inputManager) echoPrintFunction(b []byte) {
+	if i.echoInput {
+		i.Write(b)
+	}
 }
 
 func (i *inputManager) Stop() {
@@ -226,7 +240,9 @@ func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.
 		defaultForegroundColor:  colors.DefaultForegroundColor,
 		defaultBackgroundColor:  colors.DefaultBackgroundColor,
 		selectedForegroundColor: colors.SelectedForegroundColor,
+		echoInput:               true,
 	}
+	im.echoPrintFunc = im.echoPrintFunction
 	im.manager = commands.NewCommandManager(constManagerName, 3, false,
 		list.NewRemoveLeftSymbol(remSymbCmdName, im.deleteLeftSymbolAndMoveCursor, pm.DeleteLastSymbolFromCurrentBuffer),
 	)

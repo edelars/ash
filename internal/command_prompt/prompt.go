@@ -84,7 +84,7 @@ mainLoop:
 					c.currentBuffer = append(c.currentBuffer, ev.Ch)
 					iContext.GetPrintFunction()(string(ev.Ch))
 				} else if ev.Key == 32 {
-					c.currentBuffer = append(c.currentBuffer, rune(' '))
+					c.currentBuffer = append(c.currentBuffer, 32)
 					iContext.GetPrintFunction()(" ")
 				} else {
 					v := dto.VariableSet{Name: dto.VariableLastExitCode, Value: string(rune(lastExitStatus))}

@@ -26,31 +26,18 @@ func NewSystemCommand(fileToExec, description string) *commands.Command {
 				}
 			}()
 
-			// p := make([]byte, 4)
-			// iContext.GetInputReader().Read(p)
-
-			// panic(string(p[0:4]))
-
 			cmd := exec.CommandContext(ctx, fileToExec, args...)
 			cmd.Stdin = iContext.GetInputReader()
 			cmd.Stderr = iContext.GetOutputWriter()
 			cmd.Stdout = iContext.GetOutputWriter()
 
-			// termbox.SetInputMode(termbox.InputEsc)
-
-			// termbox.SetOutputMode(termbox.OutputRGB)
 			if err := cmd.Run(); err != nil {
 				iContext.GetPrintFunction()(fmt.Sprintf("command: %s :%s\n", fileToExec, err.Error()))
 			}
-			// termbox.SetInputMode(termbox.InputMouse)
-			// termbox.Flush()
-			// termbox.Sync()
 			if err := termbox.ReInit(); err != nil {
 				panic(err)
 			}
-			// termbox.SetOutputMode(termbox.OutputRGB)
 
-			// iContext.GetPrintFunction()(cmd.Path)
 			return dto.ExecResult(cmd.ProcessState.ExitCode())
 		}, true, description, "")
 }

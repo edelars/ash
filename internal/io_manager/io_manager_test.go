@@ -65,6 +65,11 @@ func Test_inputManager_Read(t *testing.T) {
 	}
 
 	var result []byte
+	var echoExecCounter int
+
+	h.echoPrintFunc = func(p []byte) {
+		echoExecCounter++
+	}
 
 	// 1 test
 	str := "1234567890"
@@ -72,7 +77,7 @@ func Test_inputManager_Read(t *testing.T) {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
 		}
-		h.inputEventChan <- termbox.Event{Key: '\n'}
+		h.inputEventChan <- termbox.Event{Key: 10}
 	}()
 
 	for {
@@ -87,8 +92,10 @@ func Test_inputManager_Read(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, str+string('\n'), string(result))
+	assert.Equal(t, str+"\n", string(result))
 	assert.Equal(t, 0, len(h.inputBuffer))
+	assert.Equal(t, 11, echoExecCounter)
+	echoExecCounter = 0
 
 	result = nil
 
@@ -98,7 +105,7 @@ func Test_inputManager_Read(t *testing.T) {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
 		}
-		h.inputEventChan <- termbox.Event{Key: '\n'}
+		h.inputEventChan <- termbox.Event{Key: 13}
 	}()
 
 	for {
@@ -113,7 +120,7 @@ func Test_inputManager_Read(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, str+string('\n'), string(result))
+	assert.Equal(t, str+"\n", string(result))
 	assert.Equal(t, 0, len(h.inputBuffer))
 
 	result = nil
@@ -124,7 +131,7 @@ func Test_inputManager_Read(t *testing.T) {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
 		}
-		h.inputEventChan <- termbox.Event{Key: '\n'}
+		h.inputEventChan <- termbox.Event{Key: 13}
 	}()
 
 	for {
@@ -139,7 +146,7 @@ func Test_inputManager_Read(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, str+string('\n'), string(result))
+	assert.Equal(t, str+"\n", string(result))
 	assert.Equal(t, 0, len(h.inputBuffer))
 
 	result = nil
@@ -150,7 +157,7 @@ func Test_inputManager_Read(t *testing.T) {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
 		}
-		h.inputEventChan <- termbox.Event{Key: '\n'}
+		h.inputEventChan <- termbox.Event{Key: 13}
 	}()
 
 	for {
@@ -165,6 +172,6 @@ func Test_inputManager_Read(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, str+string('\n'), string(result))
+	assert.Equal(t, str+"\n", string(result))
 	assert.Equal(t, 0, len(h.inputBuffer))
 }
