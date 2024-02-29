@@ -18,9 +18,10 @@ const (
 
 type inputManager struct {
 	echoInput      bool
+	terminateKey   uint16
+	enterKey       uint16
 	cursorX        int
 	cursorY        int
-	terminateKey   uint16
 	manager        commands.CommandManagerIface
 	inputEventChan chan termbox.Event
 	inputBuffer    []byte
@@ -53,7 +54,7 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 			switch ev.Ch {
 			case 0: // extra keys like enter
 				binary.BigEndian.PutUint32(l[0:4], uint32(ev.Key))
-				if ev.Key == 13 || ev.Key == 10 {
+				if ev.Key == termbox.Key(i.enterKey) {
 					iBytes = []byte{0x0A} // always is 10 or 0x0A
 					i.inputBuffer = append(i.inputBuffer, iBytes...)
 					n := copy(res, i.inputBuffer)
@@ -77,25 +78,37 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 func (i *inputManager) Write(p []byte) (n int, err error) {
 	termbox.Sync()
 
+	isEsc := false
+	// panic(fmt.Sprintf("%v", p))
 	for _, r := range bytes.Runes(p) {
-		if r == 13 {
-			continue
-		}
+		// if r == 13 {
+		// panic("rrr")
+		// continue
+		// }
 		if r == 127 {
-			continue
+			// continue
+		}
+
+		if r == 0x1B {
+			isEsc = true
+			// panic("e")
+			// continue
 		}
 
 		if r == 9 { // /t
-			i.cursorX += 8
-			continue
+			// i.cursorX += 8
+			// continue
 		}
 
-		if r == 10 { // /n
-			w, h := termbox.Size()
-			i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
-			i.cursorX = 0
-			i.cursorY = h - 1
-			continue
+		if r == 10 || r == 13 { // /n
+			if !isEsc {
+
+				w, h := termbox.Size()
+				i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
+				i.cursorX = 0
+				i.cursorY = h - 1
+				continue
+			}
 		}
 		termbox.SetCell(i.cursorX, i.cursorY, r, i.defaultForegroundColor, i.defaultBackgroundColor)
 		i.cursorX++
@@ -231,12 +244,13 @@ func (i *inputManager) GetManager() commands.CommandManagerIface {
 	return i.manager
 }
 
-func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.ColorsAdapterIface, terminateKey uint16) *inputManager {
+func NewInputManager(pm promptManager, remSymbCmdName string, colorsAdapter dto.ColorsAdapterIface, terminateKey, enterKey uint16) *inputManager {
 	colors := colorsAdapter.GetColors()
 
 	im := inputManager{
 		inputEventChan:          make(chan termbox.Event),
 		terminateKey:            terminateKey,
+		enterKey:                enterKey,
 		defaultForegroundColor:  colors.DefaultForegroundColor,
 		defaultBackgroundColor:  colors.DefaultBackgroundColor,
 		selectedForegroundColor: colors.SelectedForegroundColor,

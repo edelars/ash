@@ -147,6 +147,19 @@ func ReInit() error {
 	return nil
 }
 
+func DeInit() {
+	// out.WriteString(funcs[t_show_cursor])
+	// out.WriteString(funcs[t_sgr0])
+	// out.WriteString(funcs[t_clear_screen])
+	// out.WriteString(funcs[t_exit_ca])
+	// out.WriteString(funcs[t_exit_keypad])
+	// out.WriteString(funcs[t_exit_mouse])
+	// tcsetattr(out.Fd(), &orig_tios)
+
+	// out.Close()
+	// syscall.Close(in)
+}
+
 // Interrupt an in-progress call to PollEvent by causing it to return
 // EventInterrupt.  Note that this function will block until the PollEvent
 // function has successfully been interrupted.

@@ -54,7 +54,10 @@ func main() {
 	execTerminateChan := make(chan struct{})
 	defer close(execTerminateChan)
 
-	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter, cfg.GetKeyBind(configuration.CmdCtrlC))
+	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter,
+		cfg.GetKeyBind(configuration.CmdCtrlC),
+		cfg.GetKeyBind(configuration.CmdExecute),
+	)
 	if err := inputManager.Init(); err != nil {
 		fmt.Println(err)
 	}

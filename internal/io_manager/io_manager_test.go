@@ -19,7 +19,7 @@ func (pmimpl *pmImpl) DeleteLastSymbolFromCurrentBuffer() error {
 func Test_inputManager_rollScreenUp(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13)
+	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
 
 	// y,  x
 	screen := [][]termbox.Cell{
@@ -73,6 +73,7 @@ func Test_inputManager_Read(t *testing.T) {
 
 	// 1 test
 	str := "1234567890"
+	h.enterKey = 10
 	go func() {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
@@ -101,6 +102,7 @@ func Test_inputManager_Read(t *testing.T) {
 
 	// 2 test
 	str = ""
+	h.enterKey = 13
 	go func() {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
@@ -127,6 +129,7 @@ func Test_inputManager_Read(t *testing.T) {
 
 	// 3 test
 	str = "456"
+	h.enterKey = 13
 	go func() {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
@@ -153,6 +156,7 @@ func Test_inputManager_Read(t *testing.T) {
 
 	// 4 test
 	str = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam eget quam ac leo tempor sollicitudin. Phasellus lorem lorem, hendrerit at urna nec, sagittis sodales leo. Proin consequat orci massa, nec ultrices ligula euismod vitae. Suspendisse mollis quam non convallis bibendum. Duis vel est hendrerit, tincidunt ipsum sed, posuere mauris. Praesent quam ex, bibendum sed arcu sed, vulputate ultrices arcu. Sed at turpis a est ultricies vestibulum. Praesent eu auctor odio. Nam porta id neque vel sollicitudin. Aliquam erat volutpat. Cras nec finibus elit. Aliquam est enim, ornare quis velit a, vehicula ornare ante. Quisque aliquet metus a erat consequat, sit amet commodo neque blandit.Nam porta viverra nisi, quis elementum dolor lacinia nec. Donec condimentum nulla odio, quis varius libero dignissim eget. Duis scelerisque purus id pretium viverra. Aliquam erat volutpat. Phasellus eleifend tincidunt porta. Nam facilisis hendrerit diam sit amet blandit. Quisque ac eros ultrices, tincidunt turpis in, auctor quam. Integer malesuada erat felis, non consectetur libero porta ac. Sed in nisi ut sem interdum vulputate in non nisi. Proin lorem eros, posuere vitae fringilla quis, dapibus id mi. Praesent commodo risus sit amet augue fermentum tincidunt ut vel orci. Mauris tincidunt mattis tellus ut malesuada. Donec ut nisi fermentum, suscipit risus at, pretium eros. Fusce fermentum consequat nibh a tincidunt. Etiam ornare massa et risus ornare maximus. Sed sollicitudin congue interdum fusce.`
+	h.enterKey = 13
 	go func() {
 		for _, v := range str {
 			h.inputEventChan <- termbox.Event{Ch: v}
