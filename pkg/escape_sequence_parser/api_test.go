@@ -316,6 +316,208 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:   "?25h",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x3f, 0x32, 0x35, 0x68},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionCursorShow,
+					args:   [][]byte{{0x32, 0x35}},
+				},
+			},
+		},
+
+		{
+			name:   "?25l",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x3f, 0x32, 0x35, 0x6c},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionCursorHide,
+					args:   [][]byte{{0x32, 0x35}},
+				},
+			},
+		},
+
+		{
+			name:   "@",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x40},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionTextInsertChar,
+				},
+			},
+		},
+
+		{
+			name:   "P",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x50},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionTextDeleteChar,
+				},
+			},
+		},
+
+		{
+			name:   "X",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x58},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionTextEraseChar,
+				},
+			},
+		},
+
+		{
+			name:   "L",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x4c},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionTextInsertLine,
+				},
+			},
+		},
+
+		{
+			name:   "M",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x4d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionTextDeleteLine,
+				},
+			},
+		},
+
+		{
+			name:   "S",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x53},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionScrollUp,
+				},
+			},
+		},
+
+		{
+			name:   "T",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x54},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionScrollDown,
+				},
+			},
+		},
+
+		{
+			name:   "m",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+				},
+			},
+		},
+
+		{
+			name:   "=15h",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x3d, 0x31, 0x35, 0x68},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: escapeActionSetScreenMode,
+					args:   [][]byte{{0x31, 0x35}},
+				},
+			},
+		},
+
+		{
+			name:   "m rgb [38;2;1;2;3m", // 5B 33 38 3B 32 3B 31 3B 32 3B 33 6D
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x33, 0x38, 0x3b, 0x32, 0x3b, 0x31, 0x3b, 0x32, 0x3b, 0x33, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x33, 0x38}, {0x32}, {0x31}, {0x32}, {0x33}},
+				},
+			},
+		},
+
+		{
+			name:   "m rgb [48;2;1;2;3m", // 5B 33 48 3B 32 3B 31 3B 32 3B 33 6D
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x34, 0x38, 0x3b, 0x32, 0x3b, 0x31, 0x3b, 0x32, 0x3b, 0x33, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x34, 0x38}, {0x32}, {0x31}, {0x32}, {0x33}},
+				},
+			},
+		},
+
+		{
+			name:   "m 256 [38;5;208m", // 5B 33 38 3B 35 3B 32 30 38 6D
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x33, 0x38, 0x3b, 0x35, 0x3b, 0x32, 0x30, 0x38, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x33, 0x38}, {0x35}, {0x32, 0x30, 0x38}},
+				},
+			},
+		},
+
+		{
+			name:   "m 256 [48;5;208m", // 5B 34 38 3B 35 3B 32 30 38 6D
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x34, 0x38, 0x3b, 0x35, 0x3b, 0x32, 0x30, 0x38, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x34, 0x38}, {0x35}, {0x32, 0x30, 0x38}},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -6,7 +6,10 @@ type EscapeSequenceParserIface interface {
 
 type EscapeSequenceResultIface interface {
 	GetAction() EscapeAction
-	GetArgs() []string
+	GetArgs() [][]byte
+	//  Valid only if Action == EscapeActionSetColor, bool true - background, false - foreground
+	//	EscapeColorDefault - set foreground and background to the default color
+	GetColorFormat() (EscapeColor, bool)
 }
 
 type EscapeAction byte
@@ -28,15 +31,62 @@ const (
 	escapeActionEraseRightLeftLine = 0x4b // K
 	EscapeActionEraseRight         = 0x51 // Q
 	EscapeActionEraseLeft          = 0x57 // W
-	EscapeActionEraseLine          = 0x58 // X
+	EscapeActionEraseLine          = 0x59 // Y
 
 	escapeActionEraseDownUpScreen = 0x4a // J
 	EscapeActionEraseDown         = 0x5a // Z
 	EscapeActionEraseUp           = 0x52 // R
-	EscapeActionEraseScreen       = 0x4c // L
+	EscapeActionEraseScreen       = 0x49 // I
 
-	// EscapeActionEraseRight         = 0x4b // K
+	escapeActionPrivateControlSequence = 0x3f //?
+	EscapeActionCursorShow             = 0x68 // h
+	EscapeActionCursorHide             = 0x6c // l
 
+	EscapeActionTextInsertChar = 0x40 // "@"
+	EscapeActionTextDeleteChar = 0x50 // "P"
+	EscapeActionTextEraseChar  = 0x58 // "X"
+	EscapeActionTextInsertLine = 0x4c // "L"
+	EscapeActionTextDeleteLine = 0x4d // "M"
+
+	EscapeActionScrollUp   = 0x53 // "S"
+	EscapeActionScrollDown = 0x54 // "T"
+
+	EscapeActionSetColor = 0x6d // "m"
+
+	escapeActionSequenceHeader            = 0x1b // '/e'
+	escapeActionControlSequenceIntroducer = 0x5b // '['
+	escapeActionStringTerminator          = 0x5c // '\'
+	escapeActionSemicolonDelimiter        = 0x3b // ';'
+
+	escapeActionSetScreenMode = 0x3d // '='
+
+)
+
+type EscapeColor uint64
+
+const (
+	EscapeColorDefault EscapeColor = iota
+	EscapeColorRed
+	EscapeColorGreen
+	EscapeColorYellow
+	EscapeColorBlue
+	EscapeColorMagenta
+	EscapeColorCyan
+	EscapeColorWhite
+	EscapeColorBrightBlack
+	EscapeColorBrightRed
+	EscapeColorBrightGreen
+	EscapeColorBrightYellow
+	EscapeColorBrightBlue
+	EscapeColorBrightMagenta
+	EscapeColorBrightCyan
+	EscapeColorBrightWhite
+
+	EscapeFormatBold
+	EscapeFormatUnderline
+	EscapeFormatItalic
+
+	escapeColorMaxAttr = 65536
 )
 
 func (e *escapeParser) ParseEscapeSequence(b []byte) (res []EscapeSequenceResultIface) {
@@ -49,21 +99,21 @@ mainLool:
 			e.currentResult = nil
 		}
 
-		if brokenSequence && i != eTypeSequenceHeader {
+		if brokenSequence && i != escapeActionSequenceHeader {
 			res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
 			continue mainLool
 		}
 
 		switch i {
-		case eTypeSequenceHeader:
+		case escapeActionSequenceHeader:
 			e.terminated = false
 			controlSequence, brokenSequence = false, false
 			e.currentResult = newEscapeParserResult(EscapeActionNone)
 			continue mainLool
-		case eTypeControlSequenceIntroducer:
+		case escapeActionControlSequenceIntroducer:
 			controlSequence = true
 			continue mainLool
-		case eTypeStringTerminator:
+		case escapeActionStringTerminator:
 			e.terminated = true
 			continue mainLool
 		case EscapeActionCursorPosition,
@@ -76,7 +126,16 @@ mainLool:
 			EscapeActionCursorLeft,
 			EscapeActionCursorTop,
 			escapeActionEraseRightLeftLine,
-			escapeActionEraseDownUpScreen:
+			escapeActionEraseDownUpScreen,
+			EscapeActionCursorHide,
+			EscapeActionTextInsertChar,
+			EscapeActionTextDeleteChar,
+			EscapeActionTextEraseChar,
+			EscapeActionTextInsertLine,
+			EscapeActionTextDeleteLine,
+			EscapeActionScrollUp,
+			EscapeActionScrollDown,
+			EscapeActionSetColor:
 			e.setCurrentAction(EscapeAction(i))
 			e.terminated = true
 		case isDigit(i):
@@ -85,7 +144,13 @@ mainLool:
 				continue mainLool
 			}
 			e.currentResult.addToLastArg(i)
-		case eTypeSemicolonDelimiter:
+		case EscapeActionCursorShow: // h
+			if e.currentResult == nil || (e.currentResult != nil && e.currentResult.action == escapeActionPrivateControlSequence) {
+				e.setCurrentAction(EscapeAction(i))
+			}
+			e.terminated = true
+
+		case escapeActionSemicolonDelimiter:
 			if e.currentResult != nil {
 				e.currentResult.addEmptyArg()
 			}
@@ -94,6 +159,18 @@ mainLool:
 				e.setCurrentAction(EscapeActionClearScreen)
 				e.terminated = true
 			} else {
+				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+				continue mainLool
+			}
+		case escapeActionPrivateControlSequence:
+			e.setCurrentAction(escapeActionPrivateControlSequence)
+			e.terminated = false
+		case escapeActionSetScreenMode:
+			if controlSequence {
+				e.setCurrentAction(escapeActionSetScreenMode)
+				e.terminated = false
+			} else {
+				brokenSequence = true
 				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
 				continue mainLool
 			}
@@ -108,7 +185,6 @@ mainLool:
 			e.currentResult = nil
 		}
 	}
-
 	return
 }
 
