@@ -25,22 +25,22 @@ func (e *escapeParserResult) GetAction() EscapeAction {
 
 	case escapeActionEraseRightLeftLine:
 		if len(e.args) == 0 {
-			return EscapeActionEraseRight
+			return EscapeActionEraseRightLine
 		} else if len(e.args[0]) > 0 {
 			if e.args[0][0] == 0x31 { // 1
-				return EscapeActionEraseLeft
+				return EscapeActionEraseLeftLine
 			} else if e.args[0][0] == 0x32 { // 2
 				return EscapeActionEraseLine
 			}
 		}
 		return EscapeActionNone
 
-	case escapeActionEraseDownUpScreen:
+	case escapeActionEraseRightLeftScreen:
 		if len(e.args) == 0 {
-			return EscapeActionEraseDown
+			return EscapeActionEraseRightScreen
 		} else if len(e.args[0]) > 0 {
 			if e.args[0][0] == 0x31 { // 1
-				return EscapeActionEraseUp
+				return EscapeActionEraseLeftScreen
 			} else if e.args[0][0] == 0x32 { // 2
 				return EscapeActionEraseScreen
 			}
@@ -67,9 +67,57 @@ func (e *escapeParserResult) GetArgs() [][]byte {
 	return e.args
 }
 
+// trying to parse args and get x,y from it. If fail or empty args - result will be 1,1
+// not valid for action == EscapeActionNone
+func (e *escapeParserResult) GetIntsFromArgs() (x, y int) {
+	x, y = 1, 1
+	if len(e.args) < 1 || len(e.args[0]) == 0 {
+		return
+	}
+
+	var s string
+	for _, v := range e.args[0] {
+		s = s + string(v)
+	}
+	value, err := strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		x = int(value)
+	}
+
+	if len(e.args) < 2 || len(e.args[1]) == 0 {
+		return
+	}
+
+	s = ""
+	for _, v := range e.args[1] {
+		s = s + string(v)
+	}
+	value, err = strconv.ParseInt(s, 10, 64)
+	if err == nil {
+		y = int(value)
+	}
+
+	return
+}
+
 func (e *escapeParserResult) WithRaw(b byte) *escapeParserResult {
 	e.args = append(e.args, []byte{b})
 	return e
+}
+
+// valid only if action == EscapeActionNone
+func (e *escapeParserResult) GetRaw() []byte {
+	if len(e.args) == 0 || len(e.args[0]) == 0 {
+		return nil
+	}
+	return e.args[0]
+}
+
+func (e *escapeParser) setUpdateCurrentInputWithRaw(action EscapeAction, i byte) {
+	if e.currentResult == nil {
+		e.currentResult = newEscapeParserResult(action)
+	}
+	e.currentResult = e.currentResult.WithRaw(i)
 }
 
 // Valid only if Action == EscapeActionSetColor, bool true - background, false - foreground

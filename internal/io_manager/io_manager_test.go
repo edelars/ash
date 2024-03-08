@@ -19,7 +19,7 @@ func (pmimpl *pmImpl) DeleteLastSymbolFromCurrentBuffer() error {
 func Test_inputManager_rollScreenUp(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
 
 	// y,  x
 	screen := [][]termbox.Cell{
@@ -178,4 +178,31 @@ func Test_inputManager_Read(t *testing.T) {
 	}
 	assert.Equal(t, str+"\n", string(result))
 	assert.Equal(t, 0, len(h.inputBuffer))
+}
+
+func Test_inputManager_fillScreenSquareByXYWithChar(t *testing.T) {
+	pm := pmImpl{}
+
+	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+
+	// y,  x
+	gotScreen := [][]termbox.Cell{
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}},
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}},
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}},
+	}
+	wantScreen := [][]termbox.Cell{
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
+		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
+	}
+
+	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		gotScreen[y][x].Ch = ch
+		gotScreen[y][x].Fg = fg
+		gotScreen[y][x].Bg = bg
+	}
+
+	h.fillScreenSquareByXYWithChar(1, 2, 0, 2, 66, termbox.ColorRed, termbox.ColorGreen, set)
+	assert.Equal(t, wantScreen, gotScreen)
 }

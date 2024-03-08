@@ -28,15 +28,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: EscapeActionNone,
-					args:   [][]byte{{0x61}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x73}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61}},
+					args:   [][]byte{{0x61}, {0x73}, {0x61}},
 				},
 			},
 		},
@@ -50,15 +42,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: EscapeActionNone,
-					args:   [][]byte{{0x61}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x73}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61}},
+					args:   [][]byte{{0x61}, {0x73}, {0x61}},
 				},
 			},
 		},
@@ -76,19 +60,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				},
 				&escapeParserResult{
 					action: EscapeActionNone,
-					args:   [][]byte{{0x7a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x7a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x7a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x7a}},
+					args:   [][]byte{{0x7a}, {0x7a}, {0x7a}, {0x7a}},
 				},
 			},
 		},
@@ -254,15 +226,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: EscapeActionNone,
-					args:   [][]byte{{0x5a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x5a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x63}},
+					args:   [][]byte{{0x5a}, {0x5a}, {0x63}},
 				},
 			},
 		},
@@ -280,11 +244,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 
 				&escapeParserResult{
 					action: EscapeActionNone,
-					args:   [][]byte{{0x5a}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x5a}},
+					args:   [][]byte{{0x5a}, {0x5a}},
 				},
 			},
 		},
@@ -297,7 +257,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			},
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
-					action: escapeActionEraseDownUpScreen,
+					action: escapeActionEraseRightLeftScreen,
 					args:   [][]byte{{0x31}},
 				},
 			},

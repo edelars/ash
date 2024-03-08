@@ -24,6 +24,7 @@ import (
 	"ash/internal/pseudo_graphics/drawer"
 	"ash/internal/storage/sqlite_storage"
 	"ash/internal/variables"
+	"ash/pkg/escape_sequence_parser"
 	"ash/version"
 )
 
@@ -54,7 +55,12 @@ func main() {
 	execTerminateChan := make(chan struct{})
 	defer close(execTerminateChan)
 
-	inputManager := io_manager.NewInputManager(&promptGenerator, configuration.CmdRemoveLeftSymbol, colorsAdapter,
+	escapeSequenceParser := escape_sequence_parser.NewEscapeSequenceParser()
+
+	inputManager := io_manager.NewInputManager(&promptGenerator,
+		&escapeSequenceParser,
+		configuration.CmdRemoveLeftSymbol,
+		colorsAdapter,
 		cfg.GetKeyBind(configuration.CmdCtrlC),
 		cfg.GetKeyBind(configuration.CmdExecute),
 	)

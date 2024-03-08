@@ -133,7 +133,7 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 			fields: fields{
 				action: escapeActionEraseRightLeftLine,
 			},
-			want: EscapeActionEraseRight,
+			want: EscapeActionEraseRightLine,
 		},
 		{
 			name: "1K",
@@ -141,7 +141,7 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 				action: escapeActionEraseRightLeftLine,
 				args:   [][]byte{{0x31}},
 			},
-			want: EscapeActionEraseLeft,
+			want: EscapeActionEraseLeftLine,
 		},
 		{
 			name: "2K",
@@ -155,22 +155,22 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 		{
 			name: "J",
 			fields: fields{
-				action: escapeActionEraseDownUpScreen,
+				action: escapeActionEraseRightLeftScreen,
 			},
-			want: EscapeActionEraseDown,
+			want: EscapeActionEraseRightScreen,
 		},
 		{
 			name: "1J",
 			fields: fields{
-				action: escapeActionEraseDownUpScreen,
+				action: escapeActionEraseRightLeftScreen,
 				args:   [][]byte{{0x31}},
 			},
-			want: EscapeActionEraseUp,
+			want: EscapeActionEraseLeftScreen,
 		},
 		{
 			name: "2J",
 			fields: fields{
-				action: escapeActionEraseDownUpScreen,
+				action: escapeActionEraseRightLeftScreen,
 				args:   [][]byte{{0x32}},
 			},
 			want: EscapeActionEraseScreen,
@@ -633,6 +633,78 @@ func Test_escapeParserResult_GetColor(t *testing.T) {
 			}
 			if got1 != tt.wantBack {
 				t.Errorf("escapeParserResult.GetColor() got back = %v, want %v", got1, tt.wantBack)
+			}
+		})
+	}
+}
+
+func Test_escapeParser_setUpdateCurrentInputWithRaw(t *testing.T) {
+	h := NewEscapeSequenceParser()
+	h.setUpdateCurrentInputWithRaw(EscapeActionEraseLeftScreen, 0x33)
+	assert.Equal(t, EscapeAction(EscapeActionEraseLeftScreen), h.currentResult.action)
+	assert.Equal(t, uint8(0x33), h.currentResult.args[0][0])
+
+	h.setUpdateCurrentInputWithRaw(EscapeActionNone, 0x34)
+	assert.Equal(t, EscapeAction(EscapeActionEraseLeftScreen), h.currentResult.action)
+	assert.Equal(t, uint8(0x33), h.currentResult.args[0][0])
+	assert.Equal(t, uint8(0x34), h.currentResult.args[1][0])
+}
+
+func Test_escapeParserResult_GetXYFromArgs(t *testing.T) {
+	type fields struct {
+		args [][]byte
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		wantX  int
+		wantY  int
+	}{
+		{
+			name: "12-34",
+			fields: fields{
+				args: [][]byte{{0x31, 0x32}, {0x33, 0x34}},
+			},
+			wantX: 12,
+			wantY: 34,
+		},
+
+		{
+			name: "12-",
+			fields: fields{
+				args: [][]byte{{0x31, 0x32}},
+			},
+			wantX: 12,
+			wantY: 1,
+		},
+
+		{
+			name: "2-",
+			fields: fields{
+				args: [][]byte{{0x32}},
+			},
+			wantX: 2,
+			wantY: 1,
+		},
+
+		{
+			name:   "empty",
+			fields: fields{},
+			wantX:  1,
+			wantY:  1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &escapeParserResult{
+				args: tt.fields.args,
+			}
+			gotX, gotY := e.GetIntsFromArgs()
+			if gotX != tt.wantX {
+				t.Errorf("escapeParserResult.GetXYFromArgs() gotX = %v, want %v", gotX, tt.wantX)
+			}
+			if gotY != tt.wantY {
+				t.Errorf("escapeParserResult.GetXYFromArgs() gotY = %v, want %v", gotY, tt.wantY)
 			}
 		})
 	}

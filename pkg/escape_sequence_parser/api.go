@@ -1,7 +1,7 @@
 package escape_sequence_parser
 
 type EscapeSequenceParserIface interface {
-	ParseEscapeSequence(b []byte) EscapeSequenceResultIface
+	ParseEscapeSequence(b []byte) []EscapeSequenceResultIface
 }
 
 type EscapeSequenceResultIface interface {
@@ -10,6 +10,11 @@ type EscapeSequenceResultIface interface {
 	//  Valid only if Action == EscapeActionSetColor, bool true - background, false - foreground
 	//	EscapeColorDefault - set foreground and background to the default color
 	GetColorFormat() (EscapeColor, bool)
+	// valid only if action == EscapeActionNone
+	GetRaw() []byte
+	// trying to parse args and get x,y from it. If fail or empty args - result will be 1,1
+	// not valid for action == EscapeActionNone
+	GetIntsFromArgs() (n1, n2 int)
 }
 
 type EscapeAction byte
@@ -29,14 +34,14 @@ const (
 	EscapeActionClearScreen = 0x63 // c
 
 	escapeActionEraseRightLeftLine = 0x4b // K
-	EscapeActionEraseRight         = 0x51 // Q
-	EscapeActionEraseLeft          = 0x57 // W
+	EscapeActionEraseRightLine     = 0x51 // Q
+	EscapeActionEraseLeftLine      = 0x57 // W
 	EscapeActionEraseLine          = 0x59 // Y
 
-	escapeActionEraseDownUpScreen = 0x4a // J
-	EscapeActionEraseDown         = 0x5a // Z
-	EscapeActionEraseUp           = 0x52 // R
-	EscapeActionEraseScreen       = 0x49 // I
+	escapeActionEraseRightLeftScreen = 0x4a // J
+	EscapeActionEraseRightScreen     = 0x5a // Z
+	EscapeActionEraseLeftScreen      = 0x52 // R
+	EscapeActionEraseScreen          = 0x49 // I
 
 	escapeActionPrivateControlSequence = 0x3f //?
 	EscapeActionCursorShow             = 0x68 // h
@@ -97,10 +102,11 @@ mainLool:
 		if e.currentResult != nil && e.terminated {
 			res = append(res, e.currentResult)
 			e.currentResult = nil
+			e.terminated = false
 		}
 
 		if brokenSequence && i != escapeActionSequenceHeader {
-			res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			continue mainLool
 		}
 
@@ -126,7 +132,7 @@ mainLool:
 			EscapeActionCursorLeft,
 			EscapeActionCursorTop,
 			escapeActionEraseRightLeftLine,
-			escapeActionEraseDownUpScreen,
+			escapeActionEraseRightLeftScreen,
 			EscapeActionCursorHide,
 			EscapeActionTextInsertChar,
 			EscapeActionTextDeleteChar,
@@ -159,7 +165,7 @@ mainLool:
 				e.setCurrentAction(EscapeActionClearScreen)
 				e.terminated = true
 			} else {
-				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 				continue mainLool
 			}
 		case escapeActionPrivateControlSequence:
@@ -171,11 +177,10 @@ mainLool:
 				e.terminated = false
 			} else {
 				brokenSequence = true
-				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
-				continue mainLool
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			}
 		default:
-			res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			brokenSequence = true
 			continue mainLool
 		}
@@ -183,7 +188,12 @@ mainLool:
 		if e.terminated {
 			res = append(res, e.currentResult)
 			e.currentResult = nil
+			e.terminated = false
 		}
+	}
+	if e.currentResult != nil {
+		res = append(res, e.currentResult)
+		e.currentResult = nil
 	}
 	return
 }
