@@ -130,6 +130,19 @@ func (e *escapeParserResult) GetColorFormat() (EscapeColor, bool) {
 		if len(e.args[0]) == 1 && e.args[0][0] == 0x30 { // 0
 			return EscapeColorDefault, false
 		}
+		if len(e.args) == 1 && len(e.args[0]) == 1 {
+			switch e.args[0][0] {
+			case 0x31:
+				return EscapeFormatBold, false
+			case 0x33:
+				return EscapeFormatItalic, false
+			case 0x34:
+				return EscapeFormatUnderline, false
+			default:
+				return EscapeColorDefault, false
+			}
+		}
+
 		if len(e.args[0]) > 2 || len(e.args[0]) == 0 {
 			return EscapeColorDefault, false
 		}
@@ -161,6 +174,7 @@ func (e *escapeParserResult) GetColorFormat() (EscapeColor, bool) {
 			return EscapeColorDefault, false
 		}
 	case 2:
+
 		if len(e.args[0]) != 2 || len(e.args[1]) != 1 || e.args[1][0] != 0x31 { // 1
 			return EscapeColorDefault, false
 		}

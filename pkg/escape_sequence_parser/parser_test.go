@@ -620,6 +620,45 @@ func Test_escapeParserResult_GetColor(t *testing.T) {
 			wantColor: EscapeColor(2242310438912),
 			wantBack:  true,
 		},
+		{
+			name: "1m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x31}},
+			},
+			wantColor: EscapeFormatBold,
+			wantBack:  false,
+		},
+
+		{
+			name: "3m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x33}},
+			},
+			wantColor: EscapeFormatItalic,
+			wantBack:  false,
+		},
+
+		{
+			name: "4m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x34}},
+			},
+			wantColor: EscapeFormatUnderline,
+			wantBack:  false,
+		},
+
+		{
+			name: "0m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x30}},
+			},
+			wantColor: EscapeColorDefault,
+			wantBack:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -1,10 +1,12 @@
 package io_manager
 
 import (
+	"reflect"
 	"testing"
 
 	"ash/internal/colors_adapter"
 	"ash/internal/configuration"
+	"ash/pkg/escape_sequence_parser"
 	"ash/pkg/termbox"
 
 	"github.com/stretchr/testify/assert"
@@ -205,4 +207,267 @@ func Test_inputManager_fillScreenSquareByXYWithChar(t *testing.T) {
 
 	h.fillScreenSquareByXYWithChar(1, 2, 0, 2, 66, termbox.ColorRed, termbox.ColorGreen, set)
 	assert.Equal(t, wantScreen, gotScreen)
+}
+
+func Test_is256Color(t *testing.T) {
+	type args struct {
+		i escape_sequence_parser.EscapeColor
+	}
+	tests := []struct {
+		name string
+		args args
+		want escape_sequence_parser.EscapeColor
+	}{
+		{
+			name: "127",
+			args: args{
+				i: 127,
+			},
+			want: 0,
+		},
+		{
+			name: "333",
+			args: args{
+				i: 333,
+			},
+			want: 333,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := is256Color(tt.args.i); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("is256Color() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isRGBColor(t *testing.T) {
+	type args struct {
+		i escape_sequence_parser.EscapeColor
+	}
+	tests := []struct {
+		name string
+		args args
+		want escape_sequence_parser.EscapeColor
+	}{
+		{
+			name: "1024",
+			args: args{
+				i: 1024,
+			},
+			want: 1024,
+		},
+		{
+			name: "22",
+			args: args{
+				i: 22,
+			},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isRGBColor(tt.args.i); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("isRGBColor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_inputManager_insertEmptyLines(t *testing.T) {
+	pm := pmImpl{}
+
+	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h.cursorX = 1
+	h.cursorY = 2
+	// y,  x
+	screen := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+	wantScreen := [][]termbox.Cell{
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+
+	get := func(x, y int) termbox.Cell {
+		return screen[y][x]
+	}
+	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen[y][x].Ch = ch
+		screen[y][x].Fg = fg
+		screen[y][x].Bg = bg
+	}
+
+	h.insertEmptyLines(1, 4, 3, get, set)
+	assert.Equal(t, wantScreen, screen)
+
+	// 2 test
+
+	h.cursorY = 4
+	// y,  x
+	screen2 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 5, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}}, // cursorY
+		{{Ch: 6, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 7, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 8, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+	wantScreen2 := [][]termbox.Cell{
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: 5, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}}, // cursorY
+		{{Ch: 6, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 7, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 8, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+
+	get2 := func(x, y int) termbox.Cell {
+		return screen2[y][x]
+	}
+	set2 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen2[y][x].Ch = ch
+		screen2[y][x].Fg = fg
+		screen2[y][x].Bg = bg
+	}
+	h.insertEmptyLines(2, 4, 8, get2, set2)
+	assert.Equal(t, wantScreen2, screen2)
+
+	// 3 test
+	h.cursorY = 1
+	// y,  x
+	screen3 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}}, // cursorY
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 5, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 6, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 7, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 8, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+	wantScreen3 := [][]termbox.Cell{
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 5, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 6, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 7, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 8, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+	}
+
+	get3 := func(x, y int) termbox.Cell {
+		return screen3[y][x]
+	}
+	set3 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen3[y][x].Ch = ch
+		screen3[y][x].Fg = fg
+		screen3[y][x].Bg = bg
+	}
+	h.insertEmptyLines(5, 4, 8, get3, set3)
+	assert.Equal(t, wantScreen3, screen3)
+}
+
+func Test_inputManager_deleteLines(t *testing.T) {
+	pm := pmImpl{}
+
+	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h.cursorX = 1
+	h.cursorY = 2
+	// y,  x
+	screen := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}}, // cursorY
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}},
+	}
+	wantScreen := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+	}
+
+	get := func(x, y int) termbox.Cell {
+		return screen[y][x]
+	}
+	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen[y][x].Ch = ch
+		screen[y][x].Fg = fg
+		screen[y][x].Bg = bg
+	}
+
+	h.deleteLines(3, 4, 5, get, set)
+	assert.Equal(t, wantScreen, screen)
+
+	// 2 test
+	h.cursorY = 4
+	// y,  x
+	screen2 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}}, // cursorY
+	}
+	wantScreen2 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+	}
+
+	get2 := func(x, y int) termbox.Cell {
+		return screen2[y][x]
+	}
+	set2 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen2[y][x].Ch = ch
+		screen2[y][x].Fg = fg
+		screen2[y][x].Bg = bg
+	}
+
+	h.deleteLines(3, 4, 5, get2, set2)
+	assert.Equal(t, wantScreen2, screen2)
+
+	// 2 test
+	h.cursorY = 0
+	// y,  x
+	screen3 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}}, // cursorY
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}},
+	}
+	wantScreen3 := [][]termbox.Cell{
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+	}
+
+	get3 := func(x, y int) termbox.Cell {
+		return screen3[y][x]
+	}
+	set3 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen3[y][x].Ch = ch
+		screen3[y][x].Fg = fg
+		screen3[y][x].Bg = bg
+	}
+
+	h.deleteLines(10, 4, 5, get3, set3)
+	assert.Equal(t, wantScreen3, screen3)
 }

@@ -81,7 +81,8 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 func (i *inputManager) Write(p []byte) (n int, err error) {
 	termbox.Sync()
 	actions := i.escapeSequenceParser.ParseEscapeSequence(p)
-	// for _, r := range bytes.Runes(p) {
+	defaultForegroundColor, defaultBackgroundColor := i.defaultForegroundColor, i.defaultBackgroundColor
+
 mainLoop:
 	for _, a := range actions {
 		switch a.GetAction() {
@@ -99,7 +100,7 @@ mainLoop:
 					i.cursorX += 8
 					continue mainLoop
 				default:
-					termbox.SetCell(i.cursorX, i.cursorY, r, i.defaultForegroundColor, i.defaultBackgroundColor)
+					termbox.SetCell(i.cursorX, i.cursorY, r, defaultForegroundColor, defaultBackgroundColor)
 					i.cursorX++
 				}
 			}
@@ -228,26 +229,71 @@ mainLoop:
 			}
 
 		case escape_sequence_parser.EscapeActionTextInsertLine:
+			stepCount, _ := a.GetIntsFromArgs()
+			w, h := termbox.Size()
+
+			i.insertEmptyLines(stepCount, w, h, termbox.GetCell, termbox.SetCell)
+
 		case escape_sequence_parser.EscapeActionTextDeleteLine:
+			stepCount, _ := a.GetIntsFromArgs()
+			w, h := termbox.Size()
+
+			i.deleteLines(stepCount, w, h, termbox.GetCell, termbox.SetCell)
+
+		case escape_sequence_parser.EscapeActionSetColor:
+			color, isBack := a.GetColorFormat()
+
+			termColor := termbox.ColorBlack
+
+			switch color {
+			case escape_sequence_parser.EscapeColorRed:
+				termColor = termbox.ColorRed
+			case escape_sequence_parser.EscapeColorGreen:
+				termColor = termbox.ColorGreen
+			case escape_sequence_parser.EscapeColorYellow:
+				termColor = termbox.ColorYellow
+			case escape_sequence_parser.EscapeColorBlue:
+				termColor = termbox.ColorBlue
+			case escape_sequence_parser.EscapeColorMagenta:
+				termColor = termbox.ColorMagenta
+			case escape_sequence_parser.EscapeColorCyan:
+				termColor = termbox.ColorCyan
+			case escape_sequence_parser.EscapeColorWhite:
+				termColor = termbox.ColorWhite
+			case escape_sequence_parser.EscapeColorBrightBlack:
+				termColor = termbox.ColorDarkGray
+			case escape_sequence_parser.EscapeColorBrightRed:
+				termColor = termbox.ColorLightRed
+			case escape_sequence_parser.EscapeColorBrightGreen:
+				termColor = termbox.ColorLightGreen
+			case escape_sequence_parser.EscapeColorBrightYellow:
+				termColor = termbox.ColorLightYellow
+			case escape_sequence_parser.EscapeColorBrightBlue:
+				termColor = termbox.ColorLightBlue
+			case escape_sequence_parser.EscapeColorBrightMagenta:
+				termColor = termbox.ColorLightMagenta
+			case escape_sequence_parser.EscapeColorBrightCyan:
+				termColor = termbox.ColorLightCyan
+			case escape_sequence_parser.EscapeColorBrightWhite:
+				termColor = termbox.ColorWhite
+			case escape_sequence_parser.EscapeFormatBold:
+				termColor = termColor | termbox.AttrBold
+			case escape_sequence_parser.EscapeFormatItalic:
+				termColor = termColor | termbox.AttrCursive
+			case escape_sequence_parser.EscapeFormatUnderline:
+				termColor = termColor | termbox.AttrUnderline
+			case is256Color(color):
+				termColor = termbox.Attribute(color - 256)
+			case isRGBColor(color):
+				termColor = termbox.Attribute(color)
+			}
+			switch isBack {
+			case false:
+				defaultForegroundColor = termColor
+			case true:
+				defaultBackgroundColor = termColor
+			}
 		}
-		// if r == 127 {
-		// 	// continue
-		// }
-		//
-		// if r == 9 { // /t
-		// 	// i.cursorX += 8
-		// 	// continue
-		// }
-		//
-		// if r == 10 || r == 13 { // /n
-		// 	w, h := termbox.Size()
-		// 	i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
-		// 	i.cursorX = 0
-		// 	i.cursorY = h - 1
-		// 	continue
-		// }
-		// termbox.SetCell(i.cursorX, i.cursorY, r, i.defaultForegroundColor, i.defaultBackgroundColor)
-		// i.cursorX++
 	}
 	i.redrawCursor()
 	return len(p), nil
@@ -437,4 +483,53 @@ func (i *inputManager) fillScreenSquareByXYWithChar(x1, x2, y1, y2 int, ch rune,
 			set(x, y, ch, fg, bg)
 		}
 	}
+}
+
+func (i *inputManager) insertEmptyLines(linesCount, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+	totalLinesAffected := screenHeight - i.cursorY
+	removedCells := make([][]termbox.Cell, totalLinesAffected)
+
+	for c := 0; c < totalLinesAffected; c++ {
+		removedCells[c] = make([]termbox.Cell, screenWidth)
+		if i.cursorY+c >= screenHeight { // just rollup the screen
+			i.rollScreenUp(1, screenWidth, screenHeight, get, set)
+		}
+		for s := 0; s < screenWidth; s++ {
+			removedCells[c][s] = get(s, i.cursorY+c)
+			set(s, i.cursorY+c, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
+		}
+	}
+
+	i.rollScreenUp(linesCount, screenWidth, screenHeight, get, set)
+
+	for c := 0; c < totalLinesAffected; c++ {
+		for s := 0; s < screenWidth; s++ {
+			prevCell := removedCells[c][s]
+			set(s, i.cursorY+c, prevCell.Ch, prevCell.Fg, prevCell.Bg)
+		}
+	}
+}
+
+func (i *inputManager) deleteLines(linesCount, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+	totalLinesAffected := screenHeight - i.cursorY
+
+	for c := 0; c < totalLinesAffected; c++ {
+		for s := 0; s < screenWidth; s++ {
+			set(s, i.cursorY+c, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
+		}
+	}
+}
+
+func is256Color(i escape_sequence_parser.EscapeColor) escape_sequence_parser.EscapeColor {
+	if i > 256 && i <= 513 {
+		return i
+	}
+	return escape_sequence_parser.EscapeColor(0)
+}
+
+func isRGBColor(i escape_sequence_parser.EscapeColor) escape_sequence_parser.EscapeColor {
+	if i > 513 {
+		return i
+	}
+	return escape_sequence_parser.EscapeColor(0)
 }
