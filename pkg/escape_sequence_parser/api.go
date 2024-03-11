@@ -65,6 +65,17 @@ const (
 
 	escapeActionSetScreenMode = 0x3d // '='
 
+	EscapeActionSaveCursorPositionInMemory    = 0x37 // '7'
+	EscapeActionRestoreCursorPositionInMemory = 0x38 // '8'
+	EscapeActionSetReverseIndex               = 0x39 // '9'
+
+	escapeActionHVCursorPosition = 0x66 // f
+	escapeActionSP               = 0x20 // SP is a literal space character (0x20)
+	EscapeActionSetCursorOption  = 0x71 // q
+
+	EscapeActionReportCursorPosition = 0x6e // n
+	EscapeActionReportDeviceAttr     = 0x30 // 0
+
 )
 
 type EscapeColor uint64
@@ -95,7 +106,7 @@ const (
 )
 
 func (e *escapeParser) ParseEscapeSequence(b []byte) (res []EscapeSequenceResultIface) {
-	var controlSequence, brokenSequence bool
+	var controlSequence, brokenSequence, spSequence bool
 
 mainLool:
 	for _, i := range b {
@@ -113,7 +124,7 @@ mainLool:
 		switch i {
 		case escapeActionSequenceHeader:
 			e.terminated = false
-			controlSequence, brokenSequence = false, false
+			controlSequence, brokenSequence, spSequence = false, false, false
 			e.currentResult = newEscapeParserResult(EscapeActionNone)
 			continue mainLool
 		case escapeActionControlSequenceIntroducer:
@@ -138,16 +149,38 @@ mainLool:
 			EscapeActionTextDeleteChar,
 			EscapeActionTextEraseChar,
 			EscapeActionTextInsertLine,
-			EscapeActionTextDeleteLine,
 			EscapeActionScrollUp,
 			EscapeActionScrollDown,
 			EscapeActionSetColor:
 			e.setCurrentAction(EscapeAction(i))
 			e.terminated = true
+		case escapeActionHVCursorPosition:
+			e.setCurrentAction(EscapeActionCursorPosition)
+			e.terminated = true
+		case EscapeActionTextDeleteLine:
+			if controlSequence == false && e.currentResult != nil {
+				e.setCurrentAction(EscapeActionSetReverseIndex)
+			} else {
+				e.setCurrentAction(EscapeAction(i))
+			}
+			e.terminated = true
+
 		case isDigit(i):
 			if e.currentResult == nil {
 				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
 				continue mainLool
+			}
+			if controlSequence == false && e.currentResult != nil {
+				switch i {
+				case 0x37: // 7
+					e.setCurrentAction(EscapeActionSaveCursorPositionInMemory)
+					e.terminated = true
+					continue mainLool
+				case 0x38: // 7
+					e.setCurrentAction(EscapeActionRestoreCursorPositionInMemory)
+					e.terminated = true
+					continue mainLool
+				}
 			}
 			e.currentResult.addToLastArg(i)
 		case EscapeActionCursorShow: // h
@@ -164,10 +197,15 @@ mainLool:
 			if !controlSequence {
 				e.setCurrentAction(EscapeActionClearScreen)
 				e.terminated = true
-			} else {
-				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 				continue mainLool
 			}
+			if e.currentResult != nil && len(e.currentResult.GetRaw()) == 1 && e.currentResult.GetRaw()[0] == 0x30 {
+				e.setCurrentAction(EscapeActionReportDeviceAttr)
+				e.terminated = true
+				continue mainLool
+			}
+			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+			continue mainLool
 		case escapeActionPrivateControlSequence:
 			e.setCurrentAction(escapeActionPrivateControlSequence)
 			e.terminated = false
@@ -179,6 +217,24 @@ mainLool:
 				brokenSequence = true
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			}
+		case escapeActionSP:
+			spSequence = true
+		case EscapeActionSetCursorOption:
+			if !spSequence {
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+				brokenSequence = true
+				continue mainLool
+			}
+			e.setCurrentAction(EscapeActionSetCursorOption)
+			e.terminated = true
+		case EscapeActionReportCursorPosition:
+			if !controlSequence || e.currentResult == nil || len(e.currentResult.GetRaw()) != 1 || e.currentResult.GetRaw()[0] != 0x36 {
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+				brokenSequence = true
+				continue mainLool
+			}
+			e.setCurrentAction(EscapeActionReportCursorPosition)
+			e.terminated = true
 		default:
 			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			brokenSequence = true

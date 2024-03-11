@@ -1,13 +1,12 @@
 package io_manager
 
 import (
-	"reflect"
-	"testing"
-
 	"ash/internal/colors_adapter"
 	"ash/internal/configuration"
 	"ash/pkg/escape_sequence_parser"
 	"ash/pkg/termbox"
+	"reflect"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -21,7 +20,14 @@ func (pmimpl *pmImpl) DeleteLastSymbolFromCurrentBuffer() error {
 func Test_inputManager_rollScreenUp(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
 
 	// y,  x
 	screen := [][]termbox.Cell{
@@ -32,7 +38,12 @@ func Test_inputManager_rollScreenUp(t *testing.T) {
 	wantScreen := [][]termbox.Cell{
 		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
-		{{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}},
+		{
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+		},
 	}
 	gotScreen := [][]termbox.Cell{
 		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}},
@@ -53,8 +64,18 @@ func Test_inputManager_rollScreenUp(t *testing.T) {
 
 	wantScreen2 := [][]termbox.Cell{
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
-		{{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}},
-		{{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}, {Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor}},
+		{
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+		},
+		{
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+			{Ch: constEmptyRune, Fg: h.defaultForegroundColor, Bg: h.defaultBackgroundColor},
+		},
 	}
 
 	h.rollScreenUp(2, 4, 3, get, set)
@@ -185,7 +206,14 @@ func Test_inputManager_Read(t *testing.T) {
 func Test_inputManager_fillScreenSquareByXYWithChar(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
 
 	// y,  x
 	gotScreen := [][]termbox.Cell{
@@ -194,9 +222,24 @@ func Test_inputManager_fillScreenSquareByXYWithChar(t *testing.T) {
 		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}, {Ch: 0, Fg: 0, Bg: 0}},
 	}
 	wantScreen := [][]termbox.Cell{
-		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
-		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
-		{{Ch: 0, Fg: 0, Bg: 0}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen}, {Ch: 0, Fg: 0, Bg: 0}},
+		{
+			{Ch: 0, Fg: 0, Bg: 0},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 0, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: 0, Fg: 0, Bg: 0},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 0, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: 0, Fg: 0, Bg: 0},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 66, Fg: termbox.ColorRed, Bg: termbox.ColorGreen},
+			{Ch: 0, Fg: 0, Bg: 0},
+		},
 	}
 
 	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
@@ -278,7 +321,14 @@ func Test_isRGBColor(t *testing.T) {
 func Test_inputManager_insertEmptyLines(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
 	h.cursorX = 1
 	h.cursorY = 2
 	// y,  x
@@ -289,7 +339,12 @@ func Test_inputManager_insertEmptyLines(t *testing.T) {
 	}
 	wantScreen := [][]termbox.Cell{
 		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 	}
 
@@ -322,8 +377,18 @@ func Test_inputManager_insertEmptyLines(t *testing.T) {
 	wantScreen2 := [][]termbox.Cell{
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
 		{{Ch: 5, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}}, // cursorY
 		{{Ch: 6, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 		{{Ch: 7, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
@@ -355,7 +420,12 @@ func Test_inputManager_insertEmptyLines(t *testing.T) {
 		{{Ch: 8, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 	}
 	wantScreen3 := [][]termbox.Cell{
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		}, // cursorY
 		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 		{{Ch: 4, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
@@ -380,7 +450,14 @@ func Test_inputManager_insertEmptyLines(t *testing.T) {
 func Test_inputManager_deleteLines(t *testing.T) {
 	pm := pmImpl{}
 
-	h := NewInputManager(&pm, nil, configuration.CmdRemoveLeftSymbol, colors_adapter.NewColorsAdapter(configuration.Colors{}), 13, 10)
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
 	h.cursorX = 1
 	h.cursorY = 2
 	// y,  x
@@ -394,21 +471,33 @@ func Test_inputManager_deleteLines(t *testing.T) {
 	wantScreen := [][]termbox.Cell{
 		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
 		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		}, // cursorY
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
 	}
 
-	get := func(x, y int) termbox.Cell {
-		return screen[y][x]
-	}
 	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
 		screen[y][x].Ch = ch
 		screen[y][x].Fg = fg
 		screen[y][x].Bg = bg
 	}
 
-	h.deleteLines(3, 4, 5, get, set)
+	h.deleteLines(4, 5, set)
 	assert.Equal(t, wantScreen, screen)
 
 	// 2 test
@@ -426,19 +515,21 @@ func Test_inputManager_deleteLines(t *testing.T) {
 		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
 		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
 		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		}, // cursorY
 	}
 
-	get2 := func(x, y int) termbox.Cell {
-		return screen2[y][x]
-	}
 	set2 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
 		screen2[y][x].Ch = ch
 		screen2[y][x].Fg = fg
 		screen2[y][x].Bg = bg
 	}
 
-	h.deleteLines(3, 4, 5, get2, set2)
+	h.deleteLines(4, 5, set2)
 	assert.Equal(t, wantScreen2, screen2)
 
 	// 2 test
@@ -452,22 +543,101 @@ func Test_inputManager_deleteLines(t *testing.T) {
 		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}},
 	}
 	wantScreen3 := [][]termbox.Cell{
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}}, // cursorY
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
-		{{Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		}, // cursorY
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
 	}
 
-	get3 := func(x, y int) termbox.Cell {
-		return screen3[y][x]
-	}
 	set3 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
 		screen3[y][x].Ch = ch
 		screen3[y][x].Fg = fg
 		screen3[y][x].Bg = bg
 	}
 
-	h.deleteLines(10, 4, 5, get3, set3)
+	h.deleteLines(4, 5, set3)
 	assert.Equal(t, wantScreen3, screen3)
+}
+
+func Test_inputManager_moveCursorAndCleanBetwen(t *testing.T) {
+	pm := pmImpl{}
+
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
+	h.cursorX = 2
+	h.cursorY = 3
+	// y,  x
+	screen := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}},
+	}
+	wantScreen := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+	}
+
+	get := func(x, y int) termbox.Cell {
+		return screen[y][x]
+	}
+	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen[y][x].Ch = ch
+		screen[y][x].Fg = fg
+		screen[y][x].Bg = bg
+	}
+
+	h.moveCursorAndCleanBetwen(2, 1, 4, 5, set)
+	assert.Equal(t, wantScreen, screen)
 }

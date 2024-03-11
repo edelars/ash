@@ -1,15 +1,14 @@
 package io_manager
 
 import (
-	"bytes"
-	"encoding/binary"
-	"errors"
-
 	"ash/internal/commands"
 	"ash/internal/dto"
 	"ash/internal/io_manager/list"
 	"ash/pkg/escape_sequence_parser"
 	"ash/pkg/termbox"
+	"bytes"
+	"encoding/binary"
+	"errors"
 )
 
 const (
@@ -235,10 +234,17 @@ mainLoop:
 			i.insertEmptyLines(stepCount, w, h, termbox.GetCell, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionTextDeleteLine:
-			stepCount, _ := a.GetIntsFromArgs()
 			w, h := termbox.Size()
+			i.deleteLines(w, h, termbox.SetCell)
 
-			i.deleteLines(stepCount, w, h, termbox.GetCell, termbox.SetCell)
+		case escape_sequence_parser.EscapeActionSetReverseIndex:
+			panic("EscapeActionSetReverseIndex")
+
+		case escape_sequence_parser.EscapeActionReportCursorPosition:
+			panic("EscapeActionSetReverseIndex")
+
+		case escape_sequence_parser.EscapeActionReportDeviceAttr:
+			panic("EscapeActionSetReverseIndex")
 
 		case escape_sequence_parser.EscapeActionSetColor:
 			color, isBack := a.GetColorFormat()
@@ -463,7 +469,11 @@ type promptManager interface {
 	DeleteLastSymbolFromCurrentBuffer() error
 }
 
-func (i *inputManager) rollScreenUp(offset, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+func (i *inputManager) rollScreenUp(
+	offset, screenWidth, screenHeight int,
+	get func(x, y int) termbox.Cell,
+	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
+) {
 	for y := 0; y < screenHeight; y++ {
 		for x := 0; x < screenWidth; x++ {
 			if y+offset >= screenHeight {
@@ -477,7 +487,13 @@ func (i *inputManager) rollScreenUp(offset, screenWidth, screenHeight int, get f
 }
 
 // fill the square by x,y with given char
-func (i *inputManager) fillScreenSquareByXYWithChar(x1, x2, y1, y2 int, ch rune, fg termbox.Attribute, bg termbox.Attribute, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+func (i *inputManager) fillScreenSquareByXYWithChar(
+	x1, x2, y1, y2 int,
+	ch rune,
+	fg termbox.Attribute,
+	bg termbox.Attribute,
+	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
+) {
 	for y := y1; y <= y2; y++ {
 		for x := x1; x <= x2; x++ {
 			set(x, y, ch, fg, bg)
@@ -485,7 +501,11 @@ func (i *inputManager) fillScreenSquareByXYWithChar(x1, x2, y1, y2 int, ch rune,
 	}
 }
 
-func (i *inputManager) insertEmptyLines(linesCount, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+func (i *inputManager) insertEmptyLines(
+	linesCount, screenWidth, screenHeight int,
+	get func(x, y int) termbox.Cell,
+	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
+) {
 	totalLinesAffected := screenHeight - i.cursorY
 	removedCells := make([][]termbox.Cell, totalLinesAffected)
 
@@ -510,7 +530,10 @@ func (i *inputManager) insertEmptyLines(linesCount, screenWidth, screenHeight in
 	}
 }
 
-func (i *inputManager) deleteLines(linesCount, screenWidth, screenHeight int, get func(x, y int) termbox.Cell, set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute)) {
+func (i *inputManager) deleteLines(
+	screenWidth, screenHeight int,
+	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
+) {
 	totalLinesAffected := screenHeight - i.cursorY
 
 	for c := 0; c < totalLinesAffected; c++ {
@@ -518,6 +541,12 @@ func (i *inputManager) deleteLines(linesCount, screenWidth, screenHeight int, ge
 			set(s, i.cursorY+c, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
 		}
 	}
+}
+
+func (i *inputManager) moveCursorAndCleanBetwen(
+	newX, newY, screenWidth, screenHeight int,
+	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
+) {
 }
 
 func is256Color(i escape_sequence_parser.EscapeColor) escape_sequence_parser.EscapeColor {

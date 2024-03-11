@@ -1,19 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-
 	"ash/internal/colors_adapter"
 	"ash/internal/command_prompt"
 	"ash/internal/commands"
 	"ash/internal/commands/managers/aliases"
 	"ash/internal/commands/managers/file_system"
 	"ash/internal/commands/managers/history"
-	integrated "ash/internal/commands/managers/integrated_commands"
 	"ash/internal/commands/managers/internal_actions"
 	"ash/internal/configuration"
 	"ash/internal/configuration/envs_loader"
@@ -26,6 +19,13 @@ import (
 	"ash/internal/variables"
 	"ash/pkg/escape_sequence_parser"
 	"ash/version"
+	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+
+	integrated "ash/internal/commands/managers/integrated_commands"
 )
 
 func main() {
@@ -83,9 +83,20 @@ func main() {
 
 	// managers init
 	historyManager := history.NewHistoryManager(&storage, promptGenerator.GetUserInputFunc())
-	intergratedManager := integrated.NewIntegratedManager(&cfg, version.Vesion, version.BuildTime, version.Commit, version.BranchName)
+	intergratedManager := integrated.NewIntegratedManager(
+		&cfg,
+		version.Vesion,
+		version.BuildTime,
+		version.Commit,
+		version.BranchName,
+	)
 	filesystemManager := file_system.NewFileSystemManager(promptGenerator.GetUserInputFunc())
-	commandRouter := commands.NewCommandRouter(intergratedManager, inputManager.GetManager(), &filesystemManager, &historyManager)
+	commandRouter := commands.NewCommandRouter(
+		intergratedManager,
+		inputManager.GetManager(),
+		&filesystemManager,
+		&historyManager,
+	)
 	actionManager := internal_actions.NewInternalActionsManager(&guiDrawer,
 		commandRouter.GetSearchFunc(),
 		promptGenerator.GetUserInputFunc(),

@@ -205,6 +205,20 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
+			name:   "wrong n",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x6e},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionNone,
+					args:   [][]byte{{0x6e}},
+				},
+			},
+		},
+
+		{
 			name:   "wrong c",
 			fields: fields{},
 			args: args{
@@ -475,6 +489,119 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				&escapeParserResult{
 					action: EscapeActionSetColor,
 					args:   [][]byte{{0x34, 0x38}, {0x35}, {0x32, 0x30, 0x38}},
+				},
+			},
+		},
+
+		{
+			name:   "7",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x37},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSaveCursorPositionInMemory,
+				},
+			},
+		},
+
+		{
+			name:   "8",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x38},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionRestoreCursorPositionInMemory,
+				},
+			},
+		},
+
+		{
+			name:   "M reverse",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x4d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetReverseIndex,
+				},
+			},
+		},
+
+		{
+			name:   "10;10fzzzz",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x31, 0x30, 0x3b, 0x31, 0x30, 0x66, 0x7a, 0x7a, 0x7a, 0x7a},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionCursorPosition,
+					args:   [][]byte{{0x31, 0x30}, {0x31, 0x30}},
+				},
+				&escapeParserResult{
+					action: EscapeActionNone,
+					args:   [][]byte{{0x7a}, {0x7a}, {0x7a}, {0x7a}},
+				},
+			},
+		},
+
+		{
+			name:   "ESC [ 3 SP q",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x33, 0x20, 0x71},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetCursorOption,
+					args:   [][]byte{{0x33}},
+				},
+			},
+		},
+
+		{
+			name:   "ESC [ 0 SP q",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x30, 0x20, 0x71},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetCursorOption,
+					args:   [][]byte{{0x30}},
+				},
+			},
+		},
+
+		{
+			name:   "ESC [ 6 n",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x36, 0x6e},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionReportCursorPosition,
+					args:   [][]byte{{0x36}},
+				},
+			},
+		},
+
+		{
+			name:   "ESC [ 0 c",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x30, 0x63},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionReportDeviceAttr,
+					args:   [][]byte{{0x30}},
 				},
 			},
 		},
