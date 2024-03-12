@@ -167,6 +167,7 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 			},
 			want: EscapeActionEraseLeftScreen,
 		},
+
 		{
 			name: "2J",
 			fields: fields{
@@ -175,6 +176,7 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 			},
 			want: EscapeActionEraseScreen,
 		},
+
 		{
 			name: "25l",
 			fields: fields{
@@ -202,8 +204,17 @@ func Test_escapeParserResult_GetAction(t *testing.T) {
 		{
 			name: "24h - wrong",
 			fields: fields{
-				action: EscapeActionCursorShow,
+				action: escapeActionPrivateControlSequence,
 				args:   [][]byte{{0x32, 0x34}},
+			},
+			want: escapeActionPrivateControlSequence,
+		},
+
+		{
+			name: "1049h",
+			fields: fields{
+				action: escapeActionPrivateControlSequence,
+				args:   [][]byte{{0x31, 0x30, 0x34, 0x39}},
 			},
 			want: escapeActionPrivateControlSequence,
 		},

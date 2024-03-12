@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"strconv"
 )
 
 const (
@@ -87,12 +88,13 @@ mainLoop:
 		switch a.GetAction() {
 		case escape_sequence_parser.EscapeActionNone:
 			for _, r := range bytes.Runes(a.GetRaw()) {
+				// panic(string(a.GetRaw()))
 				switch r {
 				case 0x0D, 0x0C: // /n /r 10 13
 					w, h := termbox.Size()
 					i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
 					i.cursorX = 0
-					i.cursorY = h - 1
+					i.cursorY++
 					continue mainLoop
 
 				case 0x09: // /t
@@ -105,58 +107,57 @@ mainLoop:
 			}
 		case escape_sequence_parser.EscapeActionCursorPosition:
 			y, x := a.GetIntsFromArgs()
-			w, h := termbox.Size()
-			if w >= x {
-				i.cursorX = x - 1
-			}
-			if h >= y {
-				i.cursorY = y - 1
-			}
+			// w, h := termbox.Size()
+			i.cursorX = x - 1
+			i.cursorY = y - 1
+			// i.moveCursorAndCleanBetwen(x, y, w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionCursorUp, escape_sequence_parser.EscapeActionCursorPrevLine:
 			deltaY, _ := a.GetIntsFromArgs()
 			if i.cursorY-deltaY > 0 {
-				i.cursorY = i.cursorY - deltaY
+				w, h := termbox.Size()
+				i.moveCursorAndCleanBetwen(i.cursorX, i.cursorY-deltaY, w, h, termbox.SetCell)
 			}
 
 		case escape_sequence_parser.EscapeActionCursorDown, escape_sequence_parser.EscapeActionCursorNextLine:
 			deltaY, _ := a.GetIntsFromArgs()
-			_, h := termbox.Size()
+			w, h := termbox.Size()
 			if i.cursorY+deltaY < h {
-				i.cursorY = i.cursorY + deltaY
+				i.moveCursorAndCleanBetwen(i.cursorX, i.cursorY+deltaY, w, h, termbox.SetCell)
 			}
 
 		case escape_sequence_parser.EscapeActionCursorForward:
 			deltaX, _ := a.GetIntsFromArgs()
-			w, _ := termbox.Size()
+			w, h := termbox.Size()
 			if i.cursorX+deltaX < w {
-				i.cursorX = i.cursorX + deltaX
+				i.moveCursorAndCleanBetwen(i.cursorX+deltaX, i.cursorY, w, h, termbox.SetCell)
 			}
 
 		case escape_sequence_parser.EscapeActionCursorBackward:
 			deltaX, _ := a.GetIntsFromArgs()
 			if i.cursorX-deltaX > 0 {
-				i.cursorX = i.cursorX - deltaX
+				w, h := termbox.Size()
+				i.moveCursorAndCleanBetwen(i.cursorX-deltaX, i.cursorY, w, h, termbox.SetCell)
 			}
 
 		case escape_sequence_parser.EscapeActionCursorLeft:
+			panic(termbox.GetCell(1, 1).Ch)
 			x, _ := a.GetIntsFromArgs()
-			w, _ := termbox.Size()
-			if x-1 > 0 && x-1 < w {
-				i.cursorX = x - 1
-			}
+			w, h := termbox.Size()
+			i.moveCursorAndCleanBetwen(x-1, i.cursorY, w, h, termbox.SetCell)
 
-		case escape_sequence_parser.EscapeActionCursorTop:
+		case escape_sequence_parser.EscapeActionCursorMoveToLine:
+
+			// i.redrawCursor()
+			// time.Sleep(5 * time.Second)
 			y, _ := a.GetIntsFromArgs()
-			_, h := termbox.Size()
-			if y-1 > 0 && y-1 < h {
-				i.cursorY = y - 1
-			}
+			w, h := termbox.Size()
+			i.moveCursorAndCleanBetwen(0, y-1, w, h, termbox.SetCell)
+
 		case escape_sequence_parser.EscapeActionClearScreen, escape_sequence_parser.EscapeActionEraseScreen:
 			termbox.Clear(i.defaultForegroundColor, i.defaultBackgroundColor)
 			i.cursorX = 0
-			_, h := termbox.Size()
-			i.cursorY = h - 1
+			i.cursorY = 0
 
 		case escape_sequence_parser.EscapeActionEraseRightLine:
 			w, _ := termbox.Size()
@@ -241,17 +242,39 @@ mainLoop:
 			panic("EscapeActionSetReverseIndex")
 
 		case escape_sequence_parser.EscapeActionReportCursorPosition:
-			panic("EscapeActionSetReverseIndex")
+			cp := i.generateEscapeSeqCursorPosition()
+			w, _ := termbox.Size()
+			if len(cp) >= w-i.cursorX {
+				return
+			}
+
+			x := i.cursorX
+			for _, v := range cp {
+				termbox.SetCell(x, i.cursorY, v, defaultForegroundColor, defaultBackgroundColor)
+				x++
+			}
 
 		case escape_sequence_parser.EscapeActionReportDeviceAttr:
-			panic("EscapeActionSetReverseIndex")
+			cp := i.generateEscapeSeqDeviceAttr()
+			w, _ := termbox.Size()
+			if len(cp) >= w-i.cursorX {
+				return
+			}
+
+			x := i.cursorX
+			for _, v := range cp {
+				termbox.SetCell(x, i.cursorY, v, defaultForegroundColor, defaultBackgroundColor)
+				x++
+			}
 
 		case escape_sequence_parser.EscapeActionSetColor:
 			color, isBack := a.GetColorFormat()
 
-			termColor := termbox.ColorBlack
+			termColor := termbox.ColorDefault
 
 			switch color {
+			case escape_sequence_parser.EscapeColorDefault:
+				termColor = termbox.ColorDefault
 			case escape_sequence_parser.EscapeColorRed:
 				termColor = termbox.ColorRed
 			case escape_sequence_parser.EscapeColorGreen:
@@ -547,6 +570,66 @@ func (i *inputManager) moveCursorAndCleanBetwen(
 	newX, newY, screenWidth, screenHeight int,
 	set func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute),
 ) {
+	if newY >= screenHeight {
+		newY = screenHeight - 1
+	} else if newY < 0 {
+		newY = 0
+	}
+
+	if newX >= screenWidth {
+		newX = screenWidth - 1
+	} else if newX < 0 {
+		newX = 0
+	}
+
+	startY := i.cursorY
+	startX := i.cursorX
+
+	if newY < i.cursorY {
+		startY = newY
+		startX = newX
+	}
+
+	// от минимального y чистим до конца экрана всегда
+
+	for s := startY; s < screenHeight; s++ {
+		for c := startX; c < screenWidth; c++ { // clean current line
+			// if newY == i.cursorY && c > newX {
+			// break lineLoop
+			// }
+			set(c, s, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
+		}
+		startX = 0
+	}
+
+	i.cursorX = newX
+	i.cursorY = newY
+}
+
+// return "ESC [ <r> ; <c> R" Where <r> = cursor row and <c> = cursor column
+func (i *inputManager) generateEscapeSeqCursorPosition() []rune {
+	res := []rune{
+		escape_sequence_parser.EscapeActionSequenceHeader,            // /e
+		escape_sequence_parser.EscapeActionControlSequenceIntroducer, // [
+	}
+	x := strconv.Itoa(i.cursorX + 1)
+	y := strconv.Itoa(i.cursorY + 1)
+
+	res = append(res, []rune(y)...)
+	res = append(res, 0x3b)
+	res = append(res, []rune(x)...)
+	res = append(res, 0x52)
+
+	return res
+}
+
+// Report the terminal identity. Will emit “\x1b[?1;2c”
+func (i *inputManager) generateEscapeSeqDeviceAttr() []rune {
+	return []rune{
+		escape_sequence_parser.EscapeActionSequenceHeader,            // /e
+		escape_sequence_parser.EscapeActionControlSequenceIntroducer, // [
+		0x3F, 0x31, 0x3B, 0x32, 0x63,
+	}
 }
 
 func is256Color(i escape_sequence_parser.EscapeColor) escape_sequence_parser.EscapeColor {

@@ -596,8 +596,8 @@ func Test_inputManager_moveCursorAndCleanBetwen(t *testing.T) {
 		13,
 		10,
 	)
-	h.cursorX = 2
-	h.cursorY = 3
+	h.cursorX = 3
+	h.cursorY = 4
 	// y,  x
 	screen := [][]termbox.Cell{
 		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
@@ -629,9 +629,6 @@ func Test_inputManager_moveCursorAndCleanBetwen(t *testing.T) {
 		},
 	}
 
-	get := func(x, y int) termbox.Cell {
-		return screen[y][x]
-	}
 	set := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
 		screen[y][x].Ch = ch
 		screen[y][x].Fg = fg
@@ -640,4 +637,115 @@ func Test_inputManager_moveCursorAndCleanBetwen(t *testing.T) {
 
 	h.moveCursorAndCleanBetwen(2, 1, 4, 5, set)
 	assert.Equal(t, wantScreen, screen)
+	assert.Equal(t, 2, h.cursorX)
+	assert.Equal(t, 1, h.cursorY)
+
+	// 2 test
+	h.cursorX = 1
+	h.cursorY = 0
+	// y,  x
+	screen2 := [][]termbox.Cell{
+		{{Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}, {Ch: 1, Fg: 1, Bg: 1}},
+		{{Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}, {Ch: 2, Fg: 2, Bg: 2}},
+		{{Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}, {Ch: 3, Fg: 3, Bg: 3}},
+		{{Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}, {Ch: 4, Fg: 4, Bg: 4}},
+		{{Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}, {Ch: 5, Fg: 5, Bg: 5}},
+	}
+	wantScreen2 := [][]termbox.Cell{
+		{
+			{
+				Ch: 1,
+				Fg: 1,
+				Bg: 1,
+			}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0}, {Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+		{
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+			{Ch: constEmptyRune, Fg: 0, Bg: 0},
+		},
+	}
+
+	set2 := func(x, y int, ch rune, fg termbox.Attribute, bg termbox.Attribute) {
+		screen2[y][x].Ch = ch
+		screen2[y][x].Fg = fg
+		screen2[y][x].Bg = bg
+	}
+
+	h.moveCursorAndCleanBetwen(0, 4, 4, 5, set2)
+	assert.Equal(t, wantScreen2, screen2)
+	assert.Equal(t, 0, h.cursorX)
+	assert.Equal(t, 4, h.cursorY)
+}
+
+func Test_inputManager_generateEscapeSeqCursorPosition(t *testing.T) {
+	type fields struct {
+		cursorX int
+		cursorY int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []rune
+	}{
+		{
+			name: "39",
+			fields: fields{
+				cursorX: 2,
+				cursorY: 8,
+			},
+			want: []rune{0x1b, 0x5b, 0x39, 0x3B, 0x33, 0x52},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &inputManager{
+				cursorX: tt.fields.cursorX,
+				cursorY: tt.fields.cursorY,
+			}
+			if got := i.generateEscapeSeqCursorPosition(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("inputManager.generateEscapeSeqCursorPosition() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_inputManager_generateEscapeSeqDeviceAttr(t *testing.T) {
+	tests := []struct {
+		name string
+		want []rune
+	}{
+		{
+			name: "1",
+			want: []rune{0x1b, 0x5b, 0x3F, 0x31, 0x3B, 0x32, 0x63},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &inputManager{}
+			if got := i.generateEscapeSeqDeviceAttr(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("inputManager.generateEscapeSeqDeviceAttr() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

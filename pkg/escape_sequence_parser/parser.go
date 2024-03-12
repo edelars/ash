@@ -53,7 +53,7 @@ func (e *escapeParserResult) GetAction() EscapeAction {
 		}
 		return escapeActionPrivateControlSequence
 
-	case EscapeActionCursorShow:
+	case escapeActionPrivateControlSequence:
 		if len(e.args) == 1 && len(e.args[0]) == 2 && e.args[0][0] == 0x32 && e.args[0][1] == 0x35 {
 			return EscapeActionCursorShow
 		}
@@ -206,7 +206,8 @@ func (e *escapeParserResult) GetColorFormat() (EscapeColor, bool) {
 			return EscapeColorDefault, false
 		}
 	case 3: // 256 color
-		if len(e.args[0]) != 2 || len(e.args[1]) != 1 || len(e.args[2]) > 3 || len(e.args[2]) > 8 || len(e.args[2]) == 0 || e.args[1][0] != 0x35 { // 5
+		if len(e.args[0]) != 2 || len(e.args[1]) != 1 || len(e.args[2]) > 3 || len(e.args[2]) > 8 || len(e.args[2]) == 0 ||
+			e.args[1][0] != 0x35 { // 5
 			return EscapeColorDefault, false
 		}
 		var isBack bool
@@ -224,7 +225,8 @@ func (e *escapeParserResult) GetColorFormat() (EscapeColor, bool) {
 		return EscapeColor(value) + 256, isBack
 
 	case 5: // RGB color
-		if len(e.args[0]) != 2 || len(e.args[1]) != 1 || len(e.args[2]) > 3 || len(e.args[2]) == 0 || e.args[1][0] != 0x32 { // 2
+		if len(e.args[0]) != 2 || len(e.args[1]) != 1 || len(e.args[2]) > 3 || len(e.args[2]) == 0 ||
+			e.args[1][0] != 0x32 { // 2
 			return EscapeColorDefault, false
 		}
 		var isBack bool

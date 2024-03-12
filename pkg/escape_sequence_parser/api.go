@@ -20,16 +20,16 @@ type EscapeSequenceResultIface interface {
 type EscapeAction byte
 
 const (
-	EscapeActionNone           = 0x00
-	EscapeActionCursorPosition = 0x48 // H
-	EscapeActionCursorUp       = 0x41 // A
-	EscapeActionCursorDown     = 0x42 // B
-	EscapeActionCursorForward  = 0x43 // C
-	EscapeActionCursorBackward = 0x44 // D
-	EscapeActionCursorNextLine = 0x45 // E
-	EscapeActionCursorPrevLine = 0x46 // F
-	EscapeActionCursorLeft     = 0x47 // G
-	EscapeActionCursorTop      = 0x64 // d
+	EscapeActionNone             = 0x00
+	EscapeActionCursorPosition   = 0x48 // H
+	EscapeActionCursorUp         = 0x41 // A
+	EscapeActionCursorDown       = 0x42 // B
+	EscapeActionCursorForward    = 0x43 // C
+	EscapeActionCursorBackward   = 0x44 // D
+	EscapeActionCursorNextLine   = 0x45 // E
+	EscapeActionCursorPrevLine   = 0x46 // F
+	EscapeActionCursorLeft       = 0x47 // G
+	EscapeActionCursorMoveToLine = 0x64 // d
 
 	EscapeActionClearScreen = 0x63 // c
 
@@ -58,8 +58,8 @@ const (
 
 	EscapeActionSetColor = 0x6d // "m"
 
-	escapeActionSequenceHeader            = 0x1b // '/e'
-	escapeActionControlSequenceIntroducer = 0x5b // '['
+	EscapeActionSequenceHeader            = 0x1b // '/e'
+	EscapeActionControlSequenceIntroducer = 0x5b // '['
 	escapeActionStringTerminator          = 0x5c // '\'
 	escapeActionSemicolonDelimiter        = 0x3b // ';'
 
@@ -75,6 +75,13 @@ const (
 
 	EscapeActionReportCursorPosition = 0x6e // n
 	EscapeActionReportDeviceAttr     = 0x30 // 0
+
+	EscapeActionSetSrollingRegion        = 0x72 // r
+	EscapeActionSetKeypadApplicationMode = 0x31 // 1
+
+	EscapeActionSetEnablesASCIIMode          = 0x32 // 2
+	EscapeActionSetEnablesDECLineDrawingMode = 0x30 // 0
+	escapeActionBeginCharacterSet            = 0x28 // (
 
 )
 
@@ -106,7 +113,7 @@ const (
 )
 
 func (e *escapeParser) ParseEscapeSequence(b []byte) (res []EscapeSequenceResultIface) {
-	var controlSequence, brokenSequence, spSequence bool
+	var controlSequence, brokenSequence, spSequence, beginCharacterSet bool
 
 mainLool:
 	for _, i := range b {
@@ -116,18 +123,18 @@ mainLool:
 			e.terminated = false
 		}
 
-		if brokenSequence && i != escapeActionSequenceHeader {
+		if brokenSequence && i != EscapeActionSequenceHeader {
 			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			continue mainLool
 		}
 
 		switch i {
-		case escapeActionSequenceHeader:
+		case EscapeActionSequenceHeader:
 			e.terminated = false
-			controlSequence, brokenSequence, spSequence = false, false, false
+			controlSequence, brokenSequence, spSequence, beginCharacterSet = false, false, false, false
 			e.currentResult = newEscapeParserResult(EscapeActionNone)
 			continue mainLool
-		case escapeActionControlSequenceIntroducer:
+		case EscapeActionControlSequenceIntroducer:
 			controlSequence = true
 			continue mainLool
 		case escapeActionStringTerminator:
@@ -135,13 +142,12 @@ mainLool:
 			continue mainLool
 		case EscapeActionCursorPosition,
 			EscapeActionCursorUp,
-			EscapeActionCursorDown,
 			EscapeActionCursorForward,
 			EscapeActionCursorBackward,
 			EscapeActionCursorNextLine,
 			EscapeActionCursorPrevLine,
 			EscapeActionCursorLeft,
-			EscapeActionCursorTop,
+			EscapeActionCursorMoveToLine,
 			escapeActionEraseRightLeftLine,
 			escapeActionEraseRightLeftScreen,
 			EscapeActionCursorHide,
@@ -151,11 +157,19 @@ mainLool:
 			EscapeActionTextInsertLine,
 			EscapeActionScrollUp,
 			EscapeActionScrollDown,
-			EscapeActionSetColor:
+			EscapeActionSetColor,
+			EscapeActionSetSrollingRegion:
 			e.setCurrentAction(EscapeAction(i))
 			e.terminated = true
 		case escapeActionHVCursorPosition:
 			e.setCurrentAction(EscapeActionCursorPosition)
+			e.terminated = true
+		case EscapeActionCursorDown:
+			if beginCharacterSet {
+				e.setCurrentAction(EscapeActionSetEnablesASCIIMode)
+			} else {
+				e.setCurrentAction(EscapeActionCursorDown)
+			}
 			e.terminated = true
 		case EscapeActionTextDeleteLine:
 			if controlSequence == false && e.currentResult != nil {
@@ -167,10 +181,12 @@ mainLool:
 
 		case isDigit(i):
 			if e.currentResult == nil {
-				res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+				// res = append(res, newEscapeParserResult(EscapeActionNone).WithRaw(i))
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+
 				continue mainLool
 			}
-			if controlSequence == false && e.currentResult != nil {
+			if !controlSequence && e.currentResult != nil {
 				switch i {
 				case 0x37: // 7
 					e.setCurrentAction(EscapeActionSaveCursorPositionInMemory)
@@ -182,10 +198,17 @@ mainLool:
 					continue mainLool
 				}
 			}
+			if !controlSequence && beginCharacterSet && i == 0x30 {
+				e.setCurrentAction(EscapeActionSetEnablesDECLineDrawingMode)
+				e.terminated = true
+				continue mainLool
+			}
+
 			e.currentResult.addToLastArg(i)
 		case EscapeActionCursorShow: // h
-			if e.currentResult == nil || (e.currentResult != nil && e.currentResult.action == escapeActionPrivateControlSequence) {
-				e.setCurrentAction(EscapeAction(i))
+			// if e.currentResult == nil || (e.currentResult != nil && e.currentResult.action == escapeActionPrivateControlSequence) {
+			if e.currentResult == nil {
+				e.setCurrentAction(EscapeActionCursorShow)
 			}
 			e.terminated = true
 
@@ -213,6 +236,9 @@ mainLool:
 			if controlSequence {
 				e.setCurrentAction(escapeActionSetScreenMode)
 				e.terminated = false
+			} else if !controlSequence && !brokenSequence {
+				e.setCurrentAction(EscapeActionSetKeypadApplicationMode)
+				e.terminated = false
 			} else {
 				brokenSequence = true
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
@@ -235,8 +261,14 @@ mainLool:
 			}
 			e.setCurrentAction(EscapeActionReportCursorPosition)
 			e.terminated = true
+		case escapeActionBeginCharacterSet:
+			beginCharacterSet = true
 		default:
-			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+			if e.currentResult != nil {
+				e.currentResult.addToLastArg(i)
+			} else {
+				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+			}
 			brokenSequence = true
 			continue mainLool
 		}

@@ -56,9 +56,12 @@ func main() {
 	defer close(execTerminateChan)
 
 	escapeSequenceParser := escape_sequence_parser.NewEscapeSequenceParser()
+	escapeSequenceDebuger := escape_sequence_parser.NewESDebug(&escapeSequenceParser, "debug.txt")
+
+	defer escapeSequenceDebuger.Stop()
 
 	inputManager := io_manager.NewInputManager(&promptGenerator,
-		&escapeSequenceParser,
+		&escapeSequenceDebuger,
 		configuration.CmdRemoveLeftSymbol,
 		colorsAdapter,
 		cfg.GetKeyBind(configuration.CmdCtrlC),

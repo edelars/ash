@@ -41,6 +41,7 @@ func NewSystemCommand(fileToExec, description string) *commands.Command {
 			if err != nil {
 				panic(err)
 			}
+			
 			defer func() { _ = ptmx.Close() }() // Best effort.
 
 			pty.InheritSize(os.Stdin, ptmx)
