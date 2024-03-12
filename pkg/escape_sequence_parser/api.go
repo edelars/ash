@@ -123,7 +123,7 @@ mainLool:
 			e.terminated = false
 		}
 
-		if brokenSequence && i != EscapeActionSequenceHeader {
+		if brokenSequence && i != EscapeActionSequenceHeader && e.currentResult == nil {
 			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			continue mainLool
 		}
@@ -217,7 +217,7 @@ mainLool:
 				e.currentResult.addEmptyArg()
 			}
 		case EscapeActionClearScreen:
-			if !controlSequence {
+			if !controlSequence && len(e.currentResult.args) == 0 {
 				e.setCurrentAction(EscapeActionClearScreen)
 				e.terminated = true
 				continue mainLool
@@ -227,7 +227,7 @@ mainLool:
 				e.terminated = true
 				continue mainLool
 			}
-			e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
+			e.currentResult.addToLastArg(i)
 			continue mainLool
 		case escapeActionPrivateControlSequence:
 			e.setCurrentAction(escapeActionPrivateControlSequence)

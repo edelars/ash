@@ -35,6 +35,7 @@ type ConfigLoader struct {
 	Colors         Colors            `yaml:"colors"`
 	Autocomplete   AutocompleteOpts  `yaml:"autocomplete"`
 	Sqlite         StorageSqliteOpts `yaml:"sqlite"`
+	DebugOpts      Debug             `yaml:"debug"`
 }
 
 type Colors struct {
@@ -75,6 +76,11 @@ type KeyBind struct {
 type Alias struct {
 	Short string `yaml:"short"`
 	Full  string `yaml:"full"`
+}
+
+type Debug struct {
+	DebugLogFile   string `yaml:"debugLogFile"`
+	EscapeSequence bool   `yaml:"escapeSequence"`
 }
 
 func (c ConfigLoader) GetKeyBind(action string) uint16 {

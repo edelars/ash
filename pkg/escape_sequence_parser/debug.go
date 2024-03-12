@@ -1,6 +1,7 @@
 package escape_sequence_parser
 
 import (
+	"ash/internal/configuration"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -11,12 +12,10 @@ type esDebug struct {
 	file *os.File
 }
 
-func (esdebug *esDebug) ParseEscapeSequence(b []byte) []EscapeSequenceResultIface {
-	buf := make([]byte, len(b))
-	copy(buf, b)
-	res := esdebug.next.ParseEscapeSequence(b)
+func (esdebug *esDebug) ParseEscapeSequence(buf []byte) []EscapeSequenceResultIface {
+	res := esdebug.next.ParseEscapeSequence(buf)
 
-	if len(buf) > 1 && buf[0] == 0x1b {
+	if esdebug.file != nil && len(buf) > 1 && buf[0] == 0x1b {
 		esdebug.file.WriteString(fmt.Sprintf("data: %v\n", hex.EncodeToString(buf)))
 		esdebug.file.WriteString(fmt.Sprintf("count actions: %d \n", len(res)))
 		for c, v := range res {
@@ -40,12 +39,15 @@ func (esdebug *esDebug) Stop() {
 	esdebug.file.Close()
 }
 
-func NewESDebug(next EscapeSequenceParserIface, fileName string) esDebug {
-	file, err := os.Create(fileName)
-	if err != nil {
-		fmt.Println("Unable to create file:", err)
-		os.Exit(1)
+func NewESDebug(next EscapeSequenceParserIface, debugOpts configuration.Debug) esDebug {
+	r := esDebug{next: next, file: nil}
+	if debugOpts.EscapeSequence && debugOpts.DebugLogFile != "" {
+		file, err := os.Create(debugOpts.DebugLogFile)
+		if err != nil {
+			fmt.Println("Unable to create file:", err)
+			os.Exit(1)
+		}
+		r.file = file
 	}
-
-	return esDebug{next: next, file: file}
+	return r
 }

@@ -47,3 +47,8 @@ autocomplete:
 sqlite:
   maxHistoryPerDir: 100
   cleanupInterval: 600
+
+debug:
+  debugLogFile: "debug.txt"
+  escapeSequence: true
+

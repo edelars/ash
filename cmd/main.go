@@ -56,7 +56,7 @@ func main() {
 	defer close(execTerminateChan)
 
 	escapeSequenceParser := escape_sequence_parser.NewEscapeSequenceParser()
-	escapeSequenceDebuger := escape_sequence_parser.NewESDebug(&escapeSequenceParser, "debug.txt")
+	escapeSequenceDebuger := escape_sequence_parser.NewESDebug(&escapeSequenceParser, cfg.DebugOpts)
 
 	defer escapeSequenceDebuger.Stop()
 
