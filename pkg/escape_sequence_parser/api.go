@@ -109,6 +109,9 @@ const (
 	EscapeFormatUnderline
 	EscapeFormatItalic
 
+	EscapeColorNegative
+	EscapeColorPositiveNoNegative
+
 	escapeColorMaxAttr = 65536
 )
 

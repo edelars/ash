@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// tests for for multiple packages esq seq
 func Test_escapeParser_ParseEscapeSequence_assert(t *testing.T) {
 	// 1 test
 	h := NewEscapeSequenceParser()
@@ -492,6 +493,34 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: EscapeActionSetColor,
+				},
+			},
+		},
+
+		{
+			name:   "7m",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x37, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x37}},
+				},
+			},
+		},
+
+		{
+			name:   "777m",
+			fields: fields{},
+			args: args{
+				b: []byte{0x1b, 0x5b, 0x37, 0x37, 0x37, 0x6d},
+			},
+			wantRes: []EscapeSequenceResultIface{
+				&escapeParserResult{
+					action: EscapeActionSetColor,
+					args:   [][]byte{{0x37, 0x37, 0x37}},
 				},
 			},
 		},

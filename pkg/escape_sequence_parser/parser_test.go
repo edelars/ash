@@ -252,15 +252,6 @@ func Test_escapeParserResult_GetColor(t *testing.T) {
 			wantColor: EscapeColorDefault,
 			wantBack:  false,
 		},
-		{
-			name: "7m - wrong",
-			fields: fields{
-				action: EscapeActionSetColor,
-				args:   [][]byte{{0x37}},
-			},
-			wantColor: EscapeColorDefault,
-			wantBack:  false,
-		},
 
 		{
 			name: "30m",
@@ -269,6 +260,26 @@ func Test_escapeParserResult_GetColor(t *testing.T) {
 				args:   [][]byte{{0x33, 0x30}},
 			},
 			wantColor: EscapeColorDefault,
+			wantBack:  false,
+		},
+
+		{
+			name: "27m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x32, 0x37}},
+			},
+			wantColor: EscapeColorPositiveNoNegative,
+			wantBack:  false,
+		},
+
+		{
+			name: "0;7m - correct aka 7m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x30}, {0x37}},
+			},
+			wantColor: EscapeColorNegative,
 			wantBack:  false,
 		},
 
@@ -668,6 +679,16 @@ func Test_escapeParserResult_GetColor(t *testing.T) {
 				args:   [][]byte{{0x30}},
 			},
 			wantColor: EscapeColorDefault,
+			wantBack:  false,
+		},
+
+		{
+			name: "7m",
+			fields: fields{
+				action: EscapeActionSetColor,
+				args:   [][]byte{{0x37}},
+			},
+			wantColor: EscapeColorNegative,
 			wantBack:  false,
 		},
 	}

@@ -81,6 +81,7 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 func (i *inputManager) Write(p []byte) (n int, err error) {
 	termbox.Sync()
 	actions := i.escapeSequenceParser.ParseEscapeSequence(p)
+	// TODO move to i struct
 	defaultForegroundColor, defaultBackgroundColor := i.defaultForegroundColor, i.defaultBackgroundColor
 
 mainLoop:
@@ -162,7 +163,6 @@ mainLoop:
 			if y > 0 && y <= h {
 				i.cursorY = y - 1
 			}
-			i.cursorX = 0
 			// i.moveCursorAndCleanBetwen(0, y-1, w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionClearScreen, escape_sequence_parser.EscapeActionEraseScreen:
@@ -277,7 +277,6 @@ mainLoop:
 				termbox.SetCell(x, i.cursorY, v, defaultForegroundColor, defaultBackgroundColor)
 				x++
 			}
-
 		case escape_sequence_parser.EscapeActionSetColor:
 			color, isBack := a.GetColorFormat()
 
@@ -285,7 +284,9 @@ mainLoop:
 
 			switch color {
 			case escape_sequence_parser.EscapeColorDefault:
-				termColor = termbox.ColorDefault
+				defaultForegroundColor = i.defaultForegroundColor
+				defaultBackgroundColor = i.defaultBackgroundColor
+				continue mainLoop
 			case escape_sequence_parser.EscapeColorRed:
 				termColor = termbox.ColorRed
 			case escape_sequence_parser.EscapeColorGreen:
@@ -317,15 +318,30 @@ mainLoop:
 			case escape_sequence_parser.EscapeColorBrightWhite:
 				termColor = termbox.ColorWhite
 			case escape_sequence_parser.EscapeFormatBold:
-				termColor = termColor | termbox.AttrBold
+				defaultForegroundColor = defaultForegroundColor | termbox.AttrBold
+				continue mainLoop
+
 			case escape_sequence_parser.EscapeFormatItalic:
-				termColor = termColor | termbox.AttrCursive
+				defaultForegroundColor = defaultForegroundColor | termbox.AttrCursive
+				continue mainLoop
+
 			case escape_sequence_parser.EscapeFormatUnderline:
-				termColor = termColor | termbox.AttrUnderline
+				defaultForegroundColor = defaultForegroundColor | termbox.AttrUnderline
+				continue mainLoop
+
 			case is256Color(color):
 				termColor = termbox.Attribute(color - 256)
 			case isRGBColor(color):
 				termColor = termbox.Attribute(color)
+			case escape_sequence_parser.EscapeColorNegative:
+				defaultForegroundColor, defaultBackgroundColor = defaultBackgroundColor, defaultForegroundColor
+				continue mainLoop
+
+			case escape_sequence_parser.EscapeColorPositiveNoNegative:
+				defaultForegroundColor = i.defaultForegroundColor
+				defaultBackgroundColor = i.defaultBackgroundColor
+				continue mainLoop
+
 			}
 			switch isBack {
 			case false:
