@@ -1,7 +1,7 @@
 
 
 # Alternative shell 
-Written in golang
+Written in golang using pseudo graphics with rgb colors
 
 #### Example configuration file
 ```yaml
@@ -59,3 +59,9 @@ internal eventbus
 plugins system
 more commands (>>,>, etc)
 ```
+#### Links
+[Microsoft Console Virtual Terminal Sequences](https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences)
+[ANSI Escape Sequences](https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797)
+[ASCII Characters](https://donsnotes.com/tech/charsets/ascii.html)
+
+

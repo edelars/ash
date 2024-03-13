@@ -15,7 +15,7 @@ type esDebug struct {
 func (e *esDebug) ParseEscapeSequence(buf []byte) []EscapeSequenceResultIface {
 	res := e.next.ParseEscapeSequence(buf)
 
-	if e.file != nil && len(buf) > 1 && buf[0] == 0x1b {
+	if e.file != nil && len(buf) > 1 {
 		e.file.WriteString(fmt.Sprintf("! block begin, raw binary data: %v\n", hex.EncodeToString(buf)))
 		e.file.WriteString(fmt.Sprintf("count actions: %d \n", len(res)))
 		for c, v := range res {
@@ -26,7 +26,7 @@ func (e *esDebug) ParseEscapeSequence(buf []byte) []EscapeSequenceResultIface {
 			e.file.WriteString(fmt.Sprintf("#%d action type: %s \n", c+1, a))
 			e.file.WriteString(fmt.Sprintf("#%d raw args: %s \n", c+1, string(v.GetRaw())))
 			n1, n2 := v.GetIntsFromArgs()
-			e.file.WriteString(fmt.Sprintf("#%d int args: %d, %d \n\n", c+1, n1, n2))
+			e.file.WriteString(fmt.Sprintf("#%d int args: %d, %d \n", c+1, n1, n2))
 		}
 		e.file.WriteString(fmt.Sprintf("! end block\n\n"))
 	}

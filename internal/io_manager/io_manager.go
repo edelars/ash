@@ -88,13 +88,15 @@ mainLoop:
 		switch a.GetAction() {
 		case escape_sequence_parser.EscapeActionNone:
 			for _, r := range bytes.Runes(a.GetRaw()) {
-				// panic(string(a.GetRaw()))
 				switch r {
 				case 0x0D, 0x0C: // /n /r 10 13
 					w, h := termbox.Size()
-					i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
+					if i.cursorY == h-1 {
+						i.rollScreenUp(1, w, h, termbox.GetCell, termbox.SetCell)
+					} else {
+						i.cursorY++
+					}
 					i.cursorX = 0
-					i.cursorY++
 					continue mainLoop
 
 				case 0x09: // /t
@@ -107,9 +109,13 @@ mainLoop:
 			}
 		case escape_sequence_parser.EscapeActionCursorPosition:
 			y, x := a.GetIntsFromArgs()
-			// w, h := termbox.Size()
-			i.cursorX = x - 1
-			i.cursorY = y - 1
+			w, h := termbox.Size()
+			if x > 0 && x <= w {
+				i.cursorX = x - 1
+			}
+			if y > 0 && y <= h {
+				i.cursorY = y - 1
+			}
 			// i.moveCursorAndCleanBetwen(x, y, w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionCursorUp, escape_sequence_parser.EscapeActionCursorPrevLine:
@@ -141,18 +147,23 @@ mainLoop:
 			}
 
 		case escape_sequence_parser.EscapeActionCursorLeft:
-			panic(termbox.GetCell(1, 1).Ch)
 			x, _ := a.GetIntsFromArgs()
-			w, h := termbox.Size()
-			i.moveCursorAndCleanBetwen(x-1, i.cursorY, w, h, termbox.SetCell)
+			w, _ := termbox.Size()
+
+			if x > 0 && x <= w {
+				i.cursorX = x - 1
+			}
+			// i.moveCursorAndCleanBetwen(x-1, i.cursorY, w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionCursorMoveToLine:
-
-			// i.redrawCursor()
-			// time.Sleep(5 * time.Second)
 			y, _ := a.GetIntsFromArgs()
-			w, h := termbox.Size()
-			i.moveCursorAndCleanBetwen(0, y-1, w, h, termbox.SetCell)
+			_, h := termbox.Size()
+
+			if y > 0 && y <= h {
+				i.cursorY = y - 1
+			}
+			i.cursorX = 0
+			// i.moveCursorAndCleanBetwen(0, y-1, w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionClearScreen, escape_sequence_parser.EscapeActionEraseScreen:
 			termbox.Clear(i.defaultForegroundColor, i.defaultBackgroundColor)
@@ -239,7 +250,7 @@ mainLoop:
 			i.deleteLines(w, h, termbox.SetCell)
 
 		case escape_sequence_parser.EscapeActionSetReverseIndex:
-			panic("EscapeActionSetReverseIndex")
+			// panic("EscapeActionSetReverseIndex")
 
 		case escape_sequence_parser.EscapeActionReportCursorPosition:
 			cp := i.generateEscapeSeqCursorPosition()
@@ -590,13 +601,8 @@ func (i *inputManager) moveCursorAndCleanBetwen(
 		startX = newX
 	}
 
-	// от минимального y чистим до конца экрана всегда
-
 	for s := startY; s < screenHeight; s++ {
 		for c := startX; c < screenWidth; c++ { // clean current line
-			// if newY == i.cursorY && c > newX {
-			// break lineLoop
-			// }
 			set(c, s, constEmptyRune, i.defaultForegroundColor, i.defaultBackgroundColor)
 		}
 		startX = 0
