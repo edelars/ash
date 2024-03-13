@@ -15,12 +15,15 @@ clean:
 test:
 	go test -race ./...
 
+test1:
+	go test -count=1 -race ./...
+
 buildold: clean test
 	go build -o ./${BUILD_DIR}/${APP} ./cmd/main.go
 
 build: clean test
 	GO_ENABLED=0 go build \
-		-ldflags "-s -w -extldflags -static -X 'version.BranchName=${BRANCH_NAME}' \
+		-ldflags "-s -w  -X 'version.BranchName=${BRANCH_NAME}' \
 		-X 'version.Commit=${COMMIT}' -X 'version.BuildTime=${BUILD_TIME}'" \
        -o ./${BUILD_DIR}/${APP} ./cmd/main.go
 
@@ -34,4 +37,4 @@ generate:
 	go generate ./...
 
 run: 
-	exec  ${BUILD_DIR}/${APP}
+	exec  ${BUILD_DIR}/${APP} -c=/Users/senya/Documents/go/my/ash/config/ash.yaml 

@@ -13,26 +13,59 @@ const (
 	constMainConfigDefaultDir      = "ash"
 )
 
+const (
+	CmdExecute          = ":Execute"
+	CmdClose            = ":Close"
+	CmdAutocomplete     = ":Autocomplete"
+	CmdRemoveLeftSymbol = ":RemoveLeftSymbol"
+
+	CmdKeyUp    = ":ArrowKeyUp"
+	CmdKeyDown  = ":ArrowKeyDown"
+	CmdKeyLeft  = ":ArrowKeyLeft"
+	CmdKeyRight = ":ArrowKeyRight"
+	CmdCtrlC    = ":TerminateCurrentTask"
+)
+
 type ConfigLoader struct {
-	ConfigFileName string    // for 'config' command output
-	Prompt         string    `yaml:"prompt"`
-	Keybindings    []KeyBind `yaml:"keybindings"`
-	Aliases        []Alias   `yaml:"aliases"`
-	Envs           []string  `yaml:"envs"`
-	Colors         Colors    `yaml:"colors"`
+	ConfigFileName string            // for 'config' command output
+	Prompt         string            `yaml:"prompt"`
+	Keybindings    []KeyBind         `yaml:"keybindings"`
+	Aliases        []Alias           `yaml:"aliases"`
+	Envs           []string          `yaml:"envs"`
+	Colors         Colors            `yaml:"colors"`
+	Autocomplete   AutocompleteOpts  `yaml:"autocomplete"`
+	Sqlite         StorageSqliteOpts `yaml:"sqlite"`
+	DebugOpts      Debug             `yaml:"debug"`
 }
 
 type Colors struct {
-	DefaultText       uint64 `yaml:"defaultText"`
-	DefaultBackground uint64 `yaml:"defaultBackground"`
-	Autocomplete
+	DefaultText             string `yaml:"defaultText"`
+	DefaultBackground       string `yaml:"defaultBackground"`
+	SelectedForegroundColor string `yaml:"selectedForegroundColor"`
+
+	AutocompleteColors AutocompleteColors `yaml:"autocomplete"`
 }
 
-type Autocomplete struct {
-	SourceText       uint64 `yaml:"sourceText"`
-	SourceBackground uint64 `yaml:"sourceBackground"`
-	ResultKeyText    uint64 `yaml:"resultKeyText"`
-	ResultBackground uint64 `yaml:"resultBackground"`
+type AutocompleteColors struct {
+	SourceText       string `yaml:"sourceText"`
+	SourceBackground string `yaml:"sourceBackground"`
+	ResultKeyText    string `yaml:"resultKeyText"`
+	ResultBackground string `yaml:"resultBackground"`
+	DescriptionText  string `yaml:"descriptionText"`
+}
+
+type AutocompleteOpts struct {
+	ShowFileInformation   bool `yaml:"showFileInformation"`
+	InputFocusedByDefault bool `yaml:"inputFocusedByDefault"`
+	ColumnGap             int  `yaml:"columnGap"`
+}
+
+type StorageSqliteOpts struct {
+	FileName         string `yaml:"file"`
+	WriteBuffer      int    `yaml:"writeBuffer"`
+	MaxHistoryPerDir int    `yaml:"maxHistoryPerDir"`
+	MaxHistoryTotal  int    `yaml:"maxHistoryTotal"`
+	CleanupInterval  int    `yaml:"cleanupInterval"`
 }
 
 type KeyBind struct {
@@ -43,6 +76,11 @@ type KeyBind struct {
 type Alias struct {
 	Short string `yaml:"short"`
 	Full  string `yaml:"full"`
+}
+
+type Debug struct {
+	DebugLogFile   string `yaml:"debugLogFile"`
+	EscapeSequence bool   `yaml:"escapeSequence"`
 }
 
 func (c ConfigLoader) GetKeyBind(action string) uint16 {
@@ -58,34 +96,59 @@ func NewConfigLoader() ConfigLoader {
 	startupConfig := newStartupConfigLoader()
 
 	mainConfigFilename := getConfigFilename(startupConfig.Options.ConfigDir, configdir.LocalConfig())
-	var config ConfigLoader
+	config := newConfigLoaderWithDefaults()
 
 	if _, err := os.Stat(mainConfigFilename); err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
-	// Read the file
 	data, err := os.ReadFile(mainConfigFilename)
 	if err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
-		return newConfigLoaderWithDefaults()
+		return config
 	}
+
 	config.ConfigFileName = mainConfigFilename
 	return config
 }
 
 func newConfigLoaderWithDefaults() ConfigLoader {
 	c := ConfigLoader{
-		Keybindings: []KeyBind{{27, ":Close"}, {13, ":Execute"}, {9, ":Autocomplete"}, {127, ":RemoveLeftSymbol"}},
-		Prompt:      "ASH> ",
-		Colors: Colors{DefaultText: 0, DefaultBackground: 0, Autocomplete: Autocomplete{
-			SourceText:       1,
-			SourceBackground: 13,
-			ResultKeyText:    1,
-			ResultBackground: 11,
-		}},
+		Keybindings: []KeyBind{
+			{27, ":Close"},
+			{13, ":Execute"},
+			{9, ":Autocomplete"},
+			{127, ":RemoveLeftSymbol"},
+			{65514, ":ArrowKeyRight"},
+			{65515, ":ArrowKeyLeft"},
+			{65516, ":ArrowKeyDown"},
+			{65517, ":ArrowKeyUp"},
+			{13, "TerminateCurrentTask"},
+		},
+		Prompt: "ASH- ",
+		Colors: Colors{
+			DefaultText: "none", DefaultBackground: "none",
+			SelectedForegroundColor: "#f5e0dc",
+			AutocompleteColors: AutocompleteColors{
+				SourceText:       "none",
+				SourceBackground: "#8ec07c",
+				ResultKeyText:    "none",
+				ResultBackground: "#fabd2f",
+				DescriptionText:  "none",
+			},
+		},
+		Autocomplete: AutocompleteOpts{
+			ShowFileInformation: true, InputFocusedByDefault: false, ColumnGap: 3,
+		},
+		Sqlite: StorageSqliteOpts{
+			FileName:         "sqlite.db",
+			WriteBuffer:      3,
+			MaxHistoryPerDir: 10,
+			MaxHistoryTotal:  1000,
+			CleanupInterval:  60,
+		},
 	}
 	return c
 }
@@ -122,4 +185,22 @@ func (c ConfigLoader) GetEnvs() []string {
 
 func (c ConfigLoader) GetConfig() interface{} {
 	return c
+}
+
+func (c ConfigLoader) GetAliases() []struct {
+	Short string
+	Full  string
+} {
+	var res []struct {
+		Short string
+		Full  string
+	}
+
+	for _, alias := range c.Aliases {
+		res = append(res, struct {
+			Short string
+			Full  string
+		}{alias.Short, alias.Full})
+	}
+	return res
 }

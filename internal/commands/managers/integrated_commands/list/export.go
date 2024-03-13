@@ -8,17 +8,23 @@ import (
 	"ash/internal/dto"
 )
 
+const (
+	cmdNameExport = "export"
+	cmdDescExport = "Set OS env"
+)
+
 func NewExportCommand() *commands.Command {
-	return commands.NewCommand("export",
-		func(internalC dto.InternalContextIface, args []string) dto.ExecResult {
-			el := internalC.GetExecutionList()
+	return commands.NewCommandWithExtendedInfo(cmdNameExport,
+		func(iContext dto.InternalContextIface, args []string) dto.ExecResult {
+			el := iContext.GetExecutionList()
 			if len(el) == 1 && len(args) == 1 {
 				if a, b, err := envs_loader.ParseEnvString(args[0]); err == nil {
 					os.Setenv(a, b)
 				} else {
-					internalC.GetPrintFunction()("Fail to set ENV: " + args[0])
+					iContext.GetPrintFunction()("Fail to set ENV: " + args[0] + "\n")
+					return 1
 				}
 			}
 			return dto.CommandExecResultStatusOk
-		}, true)
+		}, true, cmdDescExport, cmdNameExport)
 }

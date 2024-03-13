@@ -2,25 +2,36 @@ package command_prompt
 
 import (
 	"errors"
-	"fmt"
 
 	"ash/internal/configuration"
 	"ash/internal/dto"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type CommandPrompt struct {
-	template      string
+	template      []promptItem
 	currentBuffer []rune
 	stopChan      chan struct{}
+	execAdapter   executionAdapter
+
+	defaultBackgroundColor termbox.Attribute
+	defaultForegroundColor termbox.Attribute
 }
 
-func NewCommandPrompt(template string) CommandPrompt {
+func NewCommandPrompt(template string, colorsAdapter dto.ColorsAdapterIface) CommandPrompt {
 	if template == "" {
-		template = "ash> "
+		template = `[{"value": "ash> ", "bold": true}]`
 	}
-	return CommandPrompt{template: template, stopChan: make(chan struct{})}
+	colors := colorsAdapter.GetColors()
+
+	r := CommandPrompt{
+		template: parsePromptConfigString([]byte(template)), stopChan: make(chan struct{}),
+		defaultBackgroundColor: colors.DefaultBackgroundColor,
+		defaultForegroundColor: colors.DefaultForegroundColor,
+	}
+
+	return r
 }
 
 // For cases when user input update needed
@@ -33,10 +44,6 @@ func (c *CommandPrompt) GetUserInputFunc() func(r []rune) {
 func (c *CommandPrompt) Stop() {
 	c.stopChan <- struct{}{}
 	defer close(c.stopChan)
-}
-
-func (c *CommandPrompt) getPrompt() string {
-	return fmt.Sprintf("%s", c.template)
 }
 
 // Delete rune from user currentBuffer if possible. If not will be error
@@ -58,44 +65,49 @@ func (c *CommandPrompt) DeleteLastSymbolFromCurrentBuffer() error {
 	return c.DeleteFromCurrentBuffer(len(c.currentBuffer) - 1)
 }
 
-func (c *CommandPrompt) Run(iContext dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader) error {
+func (c *CommandPrompt) Run(iContext dto.InternalContextIface, exec Executor, cfg configuration.ConfigLoader, enterKey uint16) error {
 	promptChan := make(chan struct{}, 1)
 	defer close(promptChan)
 
+	c.execAdapter = newExecAdapter(exec, enterKey)
 	promptChan <- struct{}{}
 
+	var lastExitStatus dto.ExecResult
 mainLoop:
 	for {
 		select {
 		case ev := <-iContext.GetInputEventChan():
 			switch ev.Type {
 			case termbox.EventKey:
-
+				// panic(fmt.Sprintf("%d %v", ev.Ch, ev.Key))
 				if ev.Ch != 0 {
 					c.currentBuffer = append(c.currentBuffer, ev.Ch)
 					iContext.GetPrintFunction()(string(ev.Ch))
 				} else if ev.Key == 32 {
-					c.currentBuffer = append(c.currentBuffer, rune(' '))
+					c.currentBuffer = append(c.currentBuffer, 32)
 					iContext.GetPrintFunction()(" ")
 				} else {
-					ictx := iContext.WithLastKeyPressed(byte(ev.Key)).WithCurrentInputBuffer(c.currentBuffer)
+					v := dto.VariableSet{Name: dto.VariableLastExitCode, Value: string(rune(lastExitStatus))}
+					ictx := iContext.WithLastKeyPressed(uint16(ev.Key)).WithCurrentInputBuffer(c.currentBuffer).WithVariables([]dto.VariableSet{v})
 					r := exec.Execute(ictx)
 					switch r {
 					case dto.CommandExecResultNewUserInput:
 						iContext.GetPrintFunction()("\n")
 					case dto.CommandExecResultNotDoAnyting:
-						continue
+						continue mainLoop
 					case dto.CommandExecResultMainExit:
 						iContext.GetErrChan() <- errors.New("done")
 					default:
 						c.currentBuffer = nil
-						iContext.GetPrintFunction()("\n")
+						lastExitStatus = r
+						// iContext.GetPrintFunction()("\n")
 					}
+					termbox.Sync()
 					promptChan <- struct{}{}
 				}
 			}
 		case <-promptChan:
-			iContext.GetPrintFunction()(c.getPrompt())
+			iContext.GetCellsPrintFunction()(c.generatePrompt(iContext))
 			if c.currentBuffer != nil {
 				iContext.GetPrintFunction()(string(c.currentBuffer))
 			}

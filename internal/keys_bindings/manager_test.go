@@ -16,9 +16,10 @@ func TestNewKeyBindingsManager(t *testing.T) {
 
 	kb := NewKeyBindingsManager(nil, &cl, cr)
 
-	assert.Equal(t, 2, len(kb.bindings))
+	assert.Equal(t, 3, len(kb.bindings))
 	assert.Equal(t, ":exec", kb.bindings[13].GetName())
 	assert.Equal(t, "get", kb.bindings[3].GetName())
+	assert.Equal(t, "get2", kb.bindings[65517].GetName())
 }
 
 type confLoaderImpl struct{}
@@ -43,6 +44,10 @@ func (c confLoaderImpl) GetKeysBindings() []struct {
 			Key:    3,
 			Action: "get",
 		},
+		{
+			Key:    65517,
+			Action: "get2",
+		},
 	}
 	return res
 }
@@ -66,6 +71,12 @@ func (r commRouterImpl) SearchCommands(_ dto.InternalContextIface, patterns ...d
 		name:         "get",
 		commandsData: []dto.CommandIface{commands.NewCommand("get", nil, true)},
 		patternValue: commands.NewPattern("get", true),
+	})
+
+	res.AddResult(&searchResult{
+		name:         "get2",
+		commandsData: []dto.CommandIface{commands.NewCommand("get2", nil, true)},
+		patternValue: commands.NewPattern("get2", true),
 	})
 
 	return res

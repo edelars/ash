@@ -5,12 +5,17 @@ import (
 	"ash/internal/dto"
 )
 
+const (
+	cmdNameAlias = "alias"
+	cmdDescAlias = "Set alias for the short command call"
+)
+
 func NewAliasCommand(iContext dto.InternalContextIface) *commands.Command {
-	return commands.NewCommand("alias",
-		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
+	return commands.NewCommandWithExtendedInfo(cmdNameAlias,
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
 			panic("TODO alias")
 			// internalC.GetPrintFunction()("we`re done")
 			// internalC.GetErrChan() <- errors.New("ash exiting")
 			return dto.CommandExecResultStatusOk
-		}, true)
+		}, true, cmdDescAlias, cmdNameAlias)
 }

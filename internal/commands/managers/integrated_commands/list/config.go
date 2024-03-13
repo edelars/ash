@@ -1,20 +1,27 @@
 package list
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"ash/internal/commands"
 	"ash/internal/dto"
+
+	"gopkg.in/yaml.v3"
+)
+
+const (
+	cmdNameConfig = "_config"
+	cmdDescConfig = "Displays current configuration"
 )
 
 func NewConfigCommand(cfg CfgManager) *commands.Command {
-	return commands.NewCommand("_config",
-		func(internalC dto.InternalContextIface, _ []string) dto.ExecResult {
-			output, _ := json.MarshalIndent(cfg.GetConfig(), "", "\t")
-			internalC.GetPrintFunction()(fmt.Sprintf("%s\n", output)) // TODO via writer
+	return commands.NewCommandWithExtendedInfo(cmdNameConfig,
+		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
+			data, err := yaml.Marshal(cfg.GetConfig())
+			if err == nil {
+				w := iContext.GetOutputWriter()
+				w.Write(data)
+			}
 			return dto.CommandExecResultStatusOk
-		}, true)
+		}, true, cmdDescConfig, cmdNameConfig)
 }
 
 type CfgManager interface {

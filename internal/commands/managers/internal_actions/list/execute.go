@@ -7,26 +7,25 @@ import (
 
 	"ash/internal/commands"
 	"ash/internal/dto"
+	"ash/internal/storage"
 
 	"github.com/zenthangplus/goccm"
 )
 
-func NewExecuteCommand() *commands.Command {
-	return commands.NewCommand(":Execute",
+func NewExecuteCommand(cmdName string, historyAddFunc func(data storage.DataIface)) *commands.Command {
+	return commands.NewCommand(cmdName,
 		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
+			historyAddFunc(iContext)
 			return executeCommands(iContext, nil, execCmd)
 		}, true)
 }
 
 func execCmd(iContext dto.InternalContextIface, r io.Reader, w *io.PipeWriter, cmd dto.CommandIface) (st stResult) {
-	var b []byte
+	b := make([]byte, 1024)
 	secondWriter := bytes.NewBuffer(b)
 	mWriter := io.MultiWriter(secondWriter, w)
 	newIC := iContext.WithInputReader(r).WithOutputWriter(mWriter)
 	st.code = cmd.GetExecFunc()(newIC, cmd.GetArgs())
-	if st.code != dto.CommandExecResultStatusOk {
-		st.output = secondWriter.Bytes()
-	}
 	w.Close()
 
 	return
@@ -53,10 +52,14 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 	lastReaderPipe = readerPipe1
 
 	doneChan := make(chan struct{}, 1)
-
 	returnChan := make(chan struct{})
-
 	resChan := make(chan stResult, len(cmds))
+
+	defer func() {
+		close(resChan)
+		close(returnChan)
+		close(doneChan)
+	}()
 
 	b := true
 	for i := 0; i < len(cmds); i++ {
@@ -103,27 +106,19 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 	}()
 
 	res := dto.CommandExecResultStatusOk
-	var doneBuf []byte
 
-	defer func() {
-		if res == dto.CommandExecResultStatusOk {
-			iContext.GetOutputWriter().Write(doneBuf)
-		}
-		close(resChan)
-		close(returnChan)
-		close(doneChan)
-	}()
-
+mainLoop:
 	for {
 		select {
 		case st := <-resChan:
 			if st.code != dto.CommandExecResultStatusOk && res == dto.CommandExecResultStatusOk {
 				iContext.GetOutputWriter().Write(st.output)
+				iContext.GetOutputWriter().Write([]byte{0x0A}) // /n
 				res = st.code
 			}
 			wg.Done()
 		case <-returnChan:
-			return res
+			break mainLoop
 		case <-doneChan:
 			buf := make([]byte, 1024)
 		readLoop:
@@ -132,9 +127,19 @@ func executeCommands(iContext dto.InternalContextIface, _ []string, execFunc fun
 				if err == io.EOF {
 					break readLoop
 				}
-				doneBuf = buf[:n]
+				iContext.GetOutputWriter().Write(buf[:n])
 			}
-
 		}
 	}
+
+	return res
+}
+
+type storageIface interface {
+	SaveData(data dataIface)
+}
+
+type dataIface interface {
+	GetExecutionList() []dto.CommandIface
+	GetCurrentDir() string
 }

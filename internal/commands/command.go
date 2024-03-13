@@ -10,12 +10,23 @@ func NewCommand(name string, execFunc dto.ExecutionFunction, mustPrepareExecutio
 	}
 }
 
+func NewCommandWithExtendedInfo(name string, execFunc dto.ExecutionFunction, mustPrepareExecutionList bool, description, displayName string) *Command {
+	return &Command{
+		execFunc:                 execFunc,
+		name:                     name,
+		mustPrepareExecutionList: mustPrepareExecutionList,
+		displayName:              displayName,
+		description:              description,
+	}
+}
+
 type Command struct {
 	mustPrepareExecutionList bool
 	weight                   uint8
 	execFunc                 dto.ExecutionFunction
 	name                     string
 	displayName              string
+	description              string
 	args                     []string
 }
 
@@ -42,10 +53,6 @@ func (c *Command) GetDisplayName() string {
 	return c.displayName
 }
 
-func (c *Command) SetDisplayName(s string) {
-	c.displayName = s
-}
-
 func (c *Command) WithArgs(args []string) dto.CommandIface {
 	res := *c
 	res.args = args
@@ -58,4 +65,8 @@ func (c *Command) GetArgs() []string {
 
 func (c *Command) MustPrepareExecutionList() bool {
 	return c.mustPrepareExecutionList
+}
+
+func (c *Command) GetDescription() string {
+	return c.description
 }

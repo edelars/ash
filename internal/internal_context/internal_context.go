@@ -1,25 +1,47 @@
 package internal_context
 
 import (
-	"context"
 	"io"
 	"os"
+	"path/filepath"
 
 	"ash/internal/dto"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type InternalContext struct {
-	im                 inputManager
-	errs               chan error
-	currentKeyPressed  byte
-	ctx                context.Context
+	currentKeyPressed  uint16
+	inputManager       inputManagerIface
+	errsChan           chan error
+	execTerminateChan  chan struct{}
+	outputWriter       io.Writer
+	inputReader        io.Reader
 	currentInputBuffer []rune
 	executionList      []dto.CommandIface
 	printFunc          func(msg string)
-	outputWriter       io.Writer
-	inputReader        io.Reader
+	printCellFunc      func(c []termbox.Cell)
+	variables          map[dto.Variable]string
+}
+
+func (i InternalContext) GetVariable(v dto.Variable) string {
+	switch v {
+	case dto.VariableCurDir:
+		return i.GetCurrentDir()
+	case dto.VariableCurDirShort:
+		s := filepath.Base(i.GetCurrentDir())
+		return s
+	default:
+		s, _ := i.variables[v]
+		return s
+	}
+}
+
+func (i InternalContext) WithVariables(vars []dto.VariableSet) dto.InternalContextIface {
+	for _, v := range vars {
+		i.variables[v.Name] = v.Value
+	}
+	return i
 }
 
 func (i InternalContext) WithOutputWriter(w io.Writer) dto.InternalContextIface {
@@ -32,23 +54,28 @@ func (i InternalContext) WithInputReader(r io.Reader) dto.InternalContextIface {
 	return i
 }
 
-type inputManager interface {
+type inputManagerIface interface {
 	GetInputEventChan() chan termbox.Event
 }
 
-func NewInternalContext(ctx context.Context, im inputManager, errs chan error, printFunc func(msg string), outputWriter io.Writer, inputReader io.Reader) *InternalContext {
+func NewInternalContext(im inputManagerIface,
+	errs chan error,
+	printFunc func(msg string),
+	outputWriter io.Writer,
+	inputReader io.Reader,
+	printCellFunc func(c []termbox.Cell),
+	execTerminateChan chan struct{},
+) *InternalContext {
 	return &InternalContext{
-		ctx:          ctx,
-		im:           im,
-		errs:         errs,
-		printFunc:    printFunc,
-		outputWriter: outputWriter,
-		inputReader:  inputReader,
+		inputManager:      im,
+		errsChan:          errs,
+		printFunc:         printFunc,
+		outputWriter:      outputWriter,
+		inputReader:       inputReader,
+		printCellFunc:     printCellFunc,
+		variables:         make(map[dto.Variable]string),
+		execTerminateChan: execTerminateChan,
 	}
-}
-
-func (i InternalContext) GetEnvList() []string {
-	panic("not implemented") // TODO: Implement
 }
 
 func (i InternalContext) GetEnv(envName string) string {
@@ -60,7 +87,7 @@ func (i InternalContext) GetCurrentDir() string {
 	return s
 }
 
-func (i InternalContext) WithLastKeyPressed(b byte) dto.InternalContextIface {
+func (i InternalContext) WithLastKeyPressed(b uint16) dto.InternalContextIface {
 	i.currentKeyPressed = b
 	return i
 }
@@ -74,15 +101,11 @@ func (i InternalContext) GetCurrentInputBuffer() []rune {
 	return i.currentInputBuffer
 }
 
-func (i InternalContext) GetCTX() context.Context {
-	return i.ctx
-}
-
 func (i InternalContext) GetErrChan() chan error {
-	return i.errs
+	return i.errsChan
 }
 
-func (i InternalContext) GetLastKeyPressed() byte {
+func (i InternalContext) GetLastKeyPressed() uint16 {
 	return i.currentKeyPressed
 }
 
@@ -99,8 +122,12 @@ func (i InternalContext) GetPrintFunction() func(msg string) {
 	return i.printFunc
 }
 
+func (i InternalContext) GetCellsPrintFunction() func(cells []termbox.Cell) {
+	return i.printCellFunc
+}
+
 func (i InternalContext) GetInputEventChan() chan termbox.Event {
-	return i.im.GetInputEventChan()
+	return i.inputManager.GetInputEventChan()
 }
 
 func (i InternalContext) GetOutputWriter() io.Writer {
@@ -109,4 +136,8 @@ func (i InternalContext) GetOutputWriter() io.Writer {
 
 func (i InternalContext) GetInputReader() io.Reader {
 	return i.inputReader
+}
+
+func (i InternalContext) GetExecTerminateChan() chan struct{} {
+	return i.execTerminateChan
 }

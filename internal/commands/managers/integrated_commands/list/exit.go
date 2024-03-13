@@ -5,9 +5,14 @@ import (
 	"ash/internal/dto"
 )
 
+const (
+	cmdNameExit = "exit"
+	cmdDescExit = "Escape from ash"
+)
+
 func NewExitCommand() *commands.Command {
-	return commands.NewCommand("exit",
-		func(iContext dto.InternalContextIface, _ []string) dto.ExecResult {
+	return commands.NewCommandWithExtendedInfo(cmdNameExit,
+		func(_ dto.InternalContextIface, _ []string) dto.ExecResult {
 			return dto.CommandExecResultMainExit
-		}, true)
+		}, true, cmdDescExit, cmdNameExit)
 }

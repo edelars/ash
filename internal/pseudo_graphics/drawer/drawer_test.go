@@ -3,7 +3,8 @@ package drawer
 import (
 	"testing"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
+
 	"github.com/stretchr/testify/assert"
 )
 

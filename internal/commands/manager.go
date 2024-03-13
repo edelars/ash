@@ -5,24 +5,28 @@ import (
 )
 
 type CommandManager struct {
-	priority uint8 // for autocomplete sort
-	mainName string
-	data     []dto.CommandIface
+	supportEmptyPattern bool
+	priority            uint8 // for autocomplete sort
+	mainName            string
+	data                []dto.CommandIface
 }
 
 func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan chan dto.CommandManagerSearchResult, patterns ...dto.PatternIface) {
 	for _, pattern := range patterns {
 		var founded foundedData
-
-		if pattern.IsPrecisionSearch() {
-			founded = m.precisionSearchInCommands(pattern.GetPattern())
-		} else {
-			founded = m.searchPatternInCommands(pattern.GetPattern())
-		}
 		var arr []dto.CommandIface
-		for c, p := range founded {
-			c.SetMathWeight(p + c.GetMathWeight()) // plus basic init weight
-			arr = append(arr, c)
+
+		if pattern.GetPattern() != "" || (pattern.GetPattern() == "" && m.supportEmptyPattern) {
+
+			if pattern.IsPrecisionSearch() {
+				founded = m.precisionSearchInCommands(pattern.GetPattern())
+			} else {
+				founded = m.searchPatternInCommands(pattern.GetPattern())
+			}
+			for c, p := range founded {
+				c.SetMathWeight(p + c.GetMathWeight()) // plus basic init weight
+				arr = append(arr, c)
+			}
 		}
 
 		resultChan <- &searchResult{
@@ -37,10 +41,11 @@ func (m CommandManager) SearchCommands(_ dto.InternalContextIface, resultChan ch
 func (m CommandManager) AddCommands(cmds ...dto.CommandIface) {
 }
 
-func NewCommandManager(mainName string, priority uint8, cmds ...dto.CommandIface) (cm CommandManager) {
+func NewCommandManager(mainName string, priority uint8, supportEmptyPattern bool, cmds ...dto.CommandIface) (cm CommandManager) {
 	cm.data = append(cm.data, cmds...)
 	cm.mainName = mainName
 	cm.priority = priority
+	cm.supportEmptyPattern = supportEmptyPattern
 	return cm
 }
 
@@ -58,6 +63,11 @@ func (m CommandManager) searchPatternInCommands(searchPattern string) foundedDat
 	founded := make(foundedData)
 
 	for _, cmd := range m.data {
+
+		if searchPattern == "" && m.supportEmptyPattern {
+			founded[cmd] = 100
+			continue
+		}
 
 		percentCorrect := uint8(100)
 		step := getStepValue(cmd.GetName())

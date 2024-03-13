@@ -20,3 +20,4 @@ build/*
 vendor/
 main
 .DS_store
+*.db

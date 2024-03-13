@@ -1,10 +1,9 @@
 package dto
 
 import (
-	"context"
 	"io"
 
-	"github.com/nsf/termbox-go"
+	"ash/pkg/termbox"
 )
 
 type CommandRouterSearchResult interface {
@@ -28,7 +27,7 @@ type CommandIface interface {
 	GetArgs() []string
 	MustPrepareExecutionList() bool // current user input ready for exec and need to prepare exec list
 	GetDisplayName() string         // display name
-	SetDisplayName(displayName string)
+	GetDescription() string         // second disply field for autocomplete
 }
 
 type ExecutionFunction func(internalC InternalContextIface, args []string) ExecResult // command result. 0 ok - done, -1 there will be a new user command (ex: for backspace)
@@ -57,22 +56,27 @@ type PatternIface interface {
 }
 
 type InternalContextIface interface {
-	GetEnvList() []string
 	GetEnv(envName string) string
 	GetCurrentDir() string
-	WithLastKeyPressed(b byte) InternalContextIface
+	WithLastKeyPressed(b uint16) InternalContextIface
 	WithCurrentInputBuffer(b []rune) InternalContextIface
 	GetCurrentInputBuffer() []rune
-	GetLastKeyPressed() byte
-	GetCTX() context.Context
+	GetLastKeyPressed() uint16
 	GetInputEventChan() chan termbox.Event
 	GetErrChan() chan error
 	WithExecutionList(executionList []CommandIface) InternalContextIface
 	GetExecutionList() []CommandIface
 	GetPrintFunction() func(msg string)
+	GetCellsPrintFunction() func(cells []termbox.Cell)
+	GetVariable(v Variable) string
+	WithVariables(vars []VariableSet) InternalContextIface
+
 	// console I/O
 	GetOutputWriter() io.Writer
 	GetInputReader() io.Reader
 	WithOutputWriter(io.Writer) InternalContextIface
 	WithInputReader(io.Reader) InternalContextIface
+
+	// ctrl-c - break app
+	GetExecTerminateChan() chan struct{}
 }

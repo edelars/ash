@@ -27,7 +27,7 @@ func NewCommandExecutor(commandRouter routerIface, keyBindingManager keyBindings
 }
 
 func (r *commandExecutor) Execute(iContext dto.InternalContextIface) dto.ExecResult {
-	if mainCommand := r.keyBindingManager.GetCommandByKey(uint16(iContext.GetLastKeyPressed())); mainCommand != nil {
+	if mainCommand := r.keyBindingManager.GetCommandByKey(iContext.GetLastKeyPressed()); mainCommand != nil {
 		var err error
 		if mainCommand.MustPrepareExecutionList() {
 			iContext.GetPrintFunction()("\n")
@@ -38,9 +38,10 @@ func (r *commandExecutor) Execute(iContext dto.InternalContextIface) dto.ExecRes
 		r := mainCommand.GetExecFunc()(iContext, mainCommand.GetArgs())
 		return r
 	} else {
+		return dto.CommandExecResultNotDoAnyting
 		// iContext.GetPrintFunction()(fmt.Sprintf("Error, unknown key: %d", iContext.GetLastKeyPressed()))
 	}
-	return dto.CommandExecResultStatusOk
+	// return dto.CommandExecResultStatusOk
 }
 
 func (r *commandExecutor) prepareExecutionList(iContext dto.InternalContextIface) (dto.InternalContextIface, error) {
@@ -51,16 +52,16 @@ func (r *commandExecutor) prepareExecutionList(iContext dto.InternalContextIface
 	for counter, pattern := range pattrensArr {
 		cmsr := crsr.GetDataByPattern(pattern)
 		switch len(cmsr) {
-		case 1:
+		default:
 			commands := cmsr[0].GetCommands()
-			if len(commands) != 1 {
-				return iContext, fmt.Errorf("%w : %s commands: %d", errTooManyCmdFounds, pattern.GetPattern(), len(commands))
-			}
+			// if len(commands) != 1 {
+			// return iContext, fmt.Errorf("%w : %s commands: %d", errTooManyCmdFounds, pattern.GetPattern(), len(commands))
+			// }
 			executionList = append(executionList, commands[0].WithArgs(splitArgsStringToArr(argsArr[counter])))
 		case 0:
 			return iContext, fmt.Errorf("%w : %s", errCmdNotFounds, pattern.GetPattern())
-		default:
-			return iContext, fmt.Errorf("%w : %s source: %d", errTooManyCmdFounds, pattern.GetPattern(), len(cmsr))
+			// default:
+			// return iContext, fmt.Errorf("%w : %s source: %d %s %s", errTooManyCmdFounds, pattern.GetPattern(), len(cmsr), cmsr[0].GetSourceName(), cmsr[1].GetSourceName())
 		}
 	}
 
