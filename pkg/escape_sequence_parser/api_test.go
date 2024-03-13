@@ -3,7 +3,27 @@ package escape_sequence_parser
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+func Test_escapeParser_ParseEscapeSequence_assert(t *testing.T) {
+	// 1 test
+	h := NewEscapeSequenceParser()
+	res1 := h.ParseEscapeSequence([]byte{0x1b, 0x5b, 0x33, 0x39, 0x3b, 0x31, 0x32, 0x31}) // [39;121
+	assert.Equal(t, 0, len(res1))
+	assert.NotNil(t, h.currentResult)
+	res2 := h.ParseEscapeSequence([]byte{0x48, 0x32, 0x39, 0x37, 0x33}) // H2973
+
+	assert.Equal(t, 1, len(res2))
+	assert.Equal(t, EscapeAction(EscapeActionCursorPosition), res2[0].GetAction())
+	n1, n2 := res2[0].GetIntsFromArgs()
+	assert.Equal(t, 39, n1)
+	assert.Equal(t, 121, n2)
+	assert.NotNil(t, h.currentResult)
+	assert.Equal(t, EscapeAction(EscapeActionNone), h.currentResult.action)
+	assert.Equal(t, []byte{0x32, 0x39, 0x37, 0x33}, h.currentResult.GetRaw())
+}
 
 func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 	type fields struct {
@@ -14,42 +34,43 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		b []byte
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantRes []EscapeSequenceResultIface
+		name           string
+		fields         fields
+		args           args
+		wantRes        []EscapeSequenceResultIface
+		wantCurrentRes EscapeSequenceResultIface
 	}{
 		{
-			name:   "asa",
-			fields: fields{},
+			name: "asa",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x61, 0x73, 0x61}},
+			},
+
 			args: args{
 				b: []byte("asa"),
 			},
-			wantRes: []EscapeSequenceResultIface{
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61, 0x73, 0x61}},
-				},
-			},
 		},
 
 		{
-			name:   "\\e + asa",
-			fields: fields{},
+			name: "\\e + asa",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x61, 0x73, 0x61}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x61, 0x73, 0x61},
 			},
-			wantRes: []EscapeSequenceResultIface{
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61, 0x73, 0x61}},
-				},
-			},
 		},
 
 		{
-			name:   "10;10Hzzzz",
-			fields: fields{},
+			name: "10;10Hzzzz",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x7a, 0x7a, 0x7a, 0x7a}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x31, 0x30, 0x3b, 0x31, 0x30, 0x48, 0x7a, 0x7a, 0x7a, 0x7a},
 			},
@@ -57,10 +78,6 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				&escapeParserResult{
 					action: EscapeActionCursorPosition,
 					args:   [][]byte{{0x31, 0x30}, {0x31, 0x30}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x7a, 0x7a, 0x7a, 0x7a}},
 				},
 			},
 		},
@@ -205,60 +222,53 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
-			name:   "wrong n",
-			fields: fields{},
+			name: "wrong n",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x6e}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x6e},
 			},
-			wantRes: []EscapeSequenceResultIface{
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x6e}},
-				},
-			},
 		},
 
 		{
-			name:   "wrong c",
-			fields: fields{},
+			name: "wrong c",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x63}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x63},
 			},
-			wantRes: []EscapeSequenceResultIface{
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x63}},
-				},
-			},
 		},
 		{
-			name:   "ZZc",
-			fields: fields{},
+			name: "ZZc",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x5a, 0x5a, 0x63}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5a, 0x5a, 0x63},
-			},
-			wantRes: []EscapeSequenceResultIface{
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x5a, 0x5a, 0x63}},
-				},
 			},
 		},
 
 		{
-			name:   "cZZ",
-			fields: fields{},
+			name: "cZZ",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x5a, 0x5a}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x63, 0x5a, 0x5a},
 			},
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: EscapeActionClearScreen,
-				},
-
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x5a, 0x5a}},
 				},
 			},
 		},
@@ -278,8 +288,12 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
-			name:   "1Jaaa",
-			fields: fields{},
+			name: "1Jaaa",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x61, 0x61, 0x61}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x31, 0x4a, 0x61, 0x61, 0x61},
 			},
@@ -288,16 +302,16 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					action: escapeActionEraseRightLeftScreen,
 					args:   [][]byte{{0x31}},
 				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61, 0x61, 0x61}},
-				},
 			},
 		},
 
 		{
-			name:   "2Jaaa",
-			fields: fields{},
+			name: "2Jaaa",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x61, 0x61, 0x61}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x32, 0x4a, 0x61, 0x61, 0x61},
 			},
@@ -305,10 +319,6 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				&escapeParserResult{
 					action: escapeActionEraseRightLeftScreen,
 					args:   [][]byte{{0x32}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x61, 0x61, 0x61}},
 				},
 			},
 		},
@@ -345,12 +355,12 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 			name:   "?1h",
 			fields: fields{},
 			args: args{
-				b: []byte{0x1b, 0x3f, 0x31, 0x30, 0x34, 0x39},
+				b: []byte{0x1b, 0x3f, 0x31, 0x68},
 			},
 			wantRes: []EscapeSequenceResultIface{
 				&escapeParserResult{
 					action: escapeActionPrivateControlSequence,
-					args:   [][]byte{{0x31, 0x30, 0x34, 0x39}},
+					args:   [][]byte{{0x31}},
 				},
 			},
 		},
@@ -609,8 +619,12 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
-			name:   "10;10fzzzz",
-			fields: fields{},
+			name: "10;10fzzzz",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x7a, 0x7a, 0x7a, 0x7a}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x31, 0x30, 0x3b, 0x31, 0x30, 0x66, 0x7a, 0x7a, 0x7a, 0x7a},
 			},
@@ -618,10 +632,6 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 				&escapeParserResult{
 					action: EscapeActionCursorPosition,
 					args:   [][]byte{{0x31, 0x30}, {0x31, 0x30}},
-				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x7a, 0x7a, 0x7a, 0x7a}},
 				},
 			},
 		},
@@ -710,8 +720,7 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
-			name:   "ESC (B",
-			fields: fields{},
+			name: "ESC (B",
 			args: args{
 				b: []byte{0x1b, 0x28, 0x42},
 			},
@@ -723,8 +732,12 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 		},
 
 		{
-			name:   "ESC [1;159H11:2",
-			fields: fields{},
+			name: "ESC [1;159H11:2",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x31, 0x31, 0x3a, 0x32}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x31, 0x3b, 0x31, 0x35, 0x39, 0x48, 0x31, 0x31, 0x3a, 0x32},
 			},
@@ -733,16 +746,16 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					action: EscapeActionCursorPosition,
 					args:   [][]byte{{0x31}, {0x31, 0x35, 0x39}},
 				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x31, 0x31, 0x3a, 0x32}},
-				},
 			},
 		},
 
 		{
-			name:   "ESC [1;159H11:29:54",
-			fields: fields{},
+			name: "ESC [1;159H11:29:54",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args:   [][]byte{{0x31, 0x31, 0x3a, 0x32, 0x39, 0x3a, 0x35, 0x34, 0x0d}},
+			},
+
 			args: args{
 				b: []byte{0x1b, 0x5b, 0x31, 0x3b, 0x31, 0x35, 0x39, 0x48, 0x31, 0x31, 0x3a, 0x32, 0x39, 0x3a, 0x35, 0x34, 0x0d},
 			},
@@ -751,16 +764,41 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					action: EscapeActionCursorPosition,
 					args:   [][]byte{{0x31}, {0x31, 0x35, 0x39}},
 				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args:   [][]byte{{0x31, 0x31, 0x3a, 0x32, 0x39, 0x3a, 0x35, 0x34, 0x0d}},
-				},
 			},
 		},
 
 		{
-			name:   "ESC [2JProcesses: 748 total, ",
-			fields: fields{},
+			name: "ESC [2JProcesses: 748 total, ",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args: [][]byte{
+					{
+						0x50,
+						0x72,
+						0x6f,
+						0x63,
+						0x65,
+						0x73,
+						0x73,
+						0x65,
+						0x73,
+						0x3a,
+						0x20,
+						0x37,
+						0x34,
+						0x38,
+						0x20,
+						0x74,
+						0x6f,
+						0x74,
+						0x61,
+						0x6c,
+						0x2c,
+						0x20,
+					},
+				},
+			},
+
 			args: args{
 				b: []byte{
 					0x1b,
@@ -796,41 +834,28 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					action: escapeActionEraseRightLeftScreen,
 					args:   [][]byte{{0x32}},
 				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args: [][]byte{
-						{
-							0x50,
-							0x72,
-							0x6f,
-							0x63,
-							0x65,
-							0x73,
-							0x73,
-							0x65,
-							0x73,
-							0x3a,
-							0x20,
-							0x37,
-							0x34,
-							0x38,
-							0x20,
-							0x74,
-							0x6f,
-							0x74,
-							0x61,
-							0x6c,
-							0x2c,
-							0x20,
-						},
-					},
-				},
 			},
 		},
 
 		{
-			name:   "ESC [Hes[2JProcesses: ",
-			fields: fields{},
+			name: "ESC [Hes[2JProcesses: ",
+			wantCurrentRes: &escapeParserResult{
+				action: EscapeActionNone,
+				args: [][]byte{{
+					0x50,
+					0x72,
+					0x6f,
+					0x63,
+					0x65,
+					0x73,
+					0x73,
+					0x65,
+					0x73,
+					0x3a,
+					0x20,
+				}},
+			},
+
 			args: args{
 				b: []byte{
 					0x1b,
@@ -867,22 +892,6 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					action: escapeActionEraseRightLeftScreen,
 					args:   [][]byte{{0x32}},
 				},
-				&escapeParserResult{
-					action: EscapeActionNone,
-					args: [][]byte{{
-						0x50,
-						0x72,
-						0x6f,
-						0x63,
-						0x65,
-						0x73,
-						0x73,
-						0x65,
-						0x73,
-						0x3a,
-						0x20,
-					}},
-				},
 			},
 		},
 	}
@@ -905,8 +914,16 @@ func Test_escapeParser_ParseEscapeSequence(t *testing.T) {
 					t.Errorf("escapeParser.ParseEscapeSequence() want action: %v", v.GetAction())
 					t.Errorf("escapeParser.ParseEscapeSequence() want len args: %d", len(v.GetArgs()))
 				}
-				// panic(string(gotRes[1].GetArgs()[2]))
-
+			}
+			if e.currentResult == nil && tt.wantCurrentRes == nil {
+				return
+			}
+			if !reflect.DeepEqual(e.currentResult, tt.wantCurrentRes) {
+				t.Errorf(
+					"escapeParser.ParseEscapeSequence() e.currentResult = %+v, want %+v",
+					e.currentResult,
+					tt.wantCurrentRes,
+				)
 			}
 		})
 	}

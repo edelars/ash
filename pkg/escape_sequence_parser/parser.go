@@ -5,7 +5,12 @@ import (
 )
 
 type escapeParser struct {
-	terminated    bool
+	terminated        bool
+	sequenceHeader    bool
+	controlSequence   bool
+	spSequence        bool
+	beginCharacterSet bool
+
 	currentResult *escapeParserResult
 }
 

@@ -113,38 +113,34 @@ const (
 )
 
 func (e *escapeParser) ParseEscapeSequence(b []byte) (res []EscapeSequenceResultIface) {
-	var sequenceHeader, controlSequence, spSequence, beginCharacterSet bool
-
 mainLoop:
 	for _, i := range b {
 		if e.currentResult != nil && e.terminated {
 			res = append(res, e.currentResult)
 			e.currentResult = nil
-			e.terminated = false
-			sequenceHeader = false
+			e.terminated, e.sequenceHeader = false, false
 		}
 
-		if !sequenceHeader && i != EscapeActionSequenceHeader { // if the seq block is closed but normal characters are encountered to output
+		if !e.sequenceHeader && i != EscapeActionSequenceHeader { // if the seq block is closed but normal characters are encountered to output
 			if e.currentResult != nil {
 				e.currentResult.addToLastArg(i)
 			} else {
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			}
 			continue mainLoop
-		} else if !sequenceHeader && i == EscapeActionSequenceHeader && e.currentResult != nil { // if a new sequence is encountered and the previous block is not closed
+		} else if !e.sequenceHeader && i == EscapeActionSequenceHeader && e.currentResult != nil { // if a new sequence is encountered and the previous block is not closed
 			res = append(res, e.currentResult)
 			e.currentResult = nil
 		}
 
 		switch i {
 		case EscapeActionSequenceHeader:
-			e.terminated = false
-			sequenceHeader = true
-			controlSequence, spSequence, beginCharacterSet = false, false, false
+			e.sequenceHeader = true
+			e.terminated, e.controlSequence, e.spSequence, e.beginCharacterSet = false, false, false, false
 			e.currentResult = newEscapeParserResult(EscapeActionNone)
 			continue mainLoop
 		case EscapeActionControlSequenceIntroducer:
-			controlSequence = true
+			e.controlSequence = true
 			continue mainLoop
 		case escapeActionStringTerminator:
 			e.terminated = true
@@ -174,14 +170,14 @@ mainLoop:
 			e.setCurrentAction(EscapeActionCursorPosition)
 			e.terminated = true
 		case EscapeActionCursorDown:
-			if beginCharacterSet {
+			if e.beginCharacterSet {
 				e.setCurrentAction(EscapeActionSetEnablesASCIIMode)
 			} else {
 				e.setCurrentAction(EscapeActionCursorDown)
 			}
 			e.terminated = true
 		case EscapeActionTextDeleteLine:
-			if controlSequence == false && e.currentResult != nil {
+			if e.controlSequence == false && e.currentResult != nil {
 				e.setCurrentAction(EscapeActionSetReverseIndex)
 			} else {
 				e.setCurrentAction(EscapeAction(i))
@@ -193,7 +189,7 @@ mainLoop:
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 				continue mainLoop
 			}
-			if !controlSequence && e.currentResult != nil {
+			if !e.controlSequence && e.currentResult != nil {
 				switch i {
 				case 0x37: // 7
 					e.setCurrentAction(EscapeActionSaveCursorPositionInMemory)
@@ -205,7 +201,7 @@ mainLoop:
 					continue mainLoop
 				}
 			}
-			if !controlSequence && beginCharacterSet && i == 0x30 {
+			if !e.controlSequence && e.beginCharacterSet && i == 0x30 {
 				e.setCurrentAction(EscapeActionSetEnablesDECLineDrawingMode)
 				e.terminated = true
 				continue mainLoop
@@ -223,7 +219,7 @@ mainLoop:
 				e.currentResult.addEmptyArg()
 			}
 		case EscapeActionClearScreen:
-			if !controlSequence && len(e.currentResult.args) == 0 {
+			if !e.controlSequence && len(e.currentResult.args) == 0 {
 				e.setCurrentAction(EscapeActionClearScreen)
 				e.terminated = true
 				continue mainLoop
@@ -243,33 +239,33 @@ mainLoop:
 			e.setCurrentAction(escapeActionPrivateControlSequence)
 			e.terminated = false
 		case escapeActionSetScreenMode:
-			if controlSequence {
+			if e.controlSequence {
 				e.setCurrentAction(escapeActionSetScreenMode)
 				e.terminated = false
-			} else if !controlSequence {
+			} else if !e.controlSequence {
 				e.setCurrentAction(EscapeActionSetKeypadApplicationMode)
-				e.terminated = false
+				e.terminated = true
 			} else {
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 			}
 		case escapeActionSP:
-			spSequence = true
+			e.spSequence = true
 		case EscapeActionSetCursorOption:
-			if !spSequence {
+			if !e.spSequence {
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 				continue mainLoop
 			}
 			e.setCurrentAction(EscapeActionSetCursorOption)
 			e.terminated = true
 		case EscapeActionReportCursorPosition:
-			if !controlSequence || e.currentResult == nil || len(e.currentResult.GetRaw()) != 1 || e.currentResult.GetRaw()[0] != 0x36 {
+			if !e.controlSequence || e.currentResult == nil || len(e.currentResult.GetRaw()) != 1 || e.currentResult.GetRaw()[0] != 0x36 {
 				e.setUpdateCurrentInputWithRaw(EscapeActionNone, i)
 				continue mainLoop
 			}
 			e.setCurrentAction(EscapeActionReportCursorPosition)
 			e.terminated = true
 		case escapeActionBeginCharacterSet:
-			beginCharacterSet = true
+			e.beginCharacterSet = true
 		default:
 			if e.currentResult != nil {
 				e.currentResult.addToLastArg(i)
@@ -283,10 +279,10 @@ mainLoop:
 			res = append(res, e.currentResult)
 			e.currentResult = nil
 			e.terminated = false
-			sequenceHeader = false
+			e.sequenceHeader = false
 		}
 	}
-	if e.currentResult != nil {
+	if e.currentResult != nil && e.terminated {
 		res = append(res, e.currentResult)
 		e.currentResult = nil
 	}
