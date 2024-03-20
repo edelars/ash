@@ -35,13 +35,13 @@ func NewSystemCommand(fileToExec, description string) *commands.Command {
 			// cmd.Stdout = iContext.GetOutputWriter()
 			cmd.Env = os.Environ()
 
-			termbox.SetInputMode(termbox.InputEsc)
+			// termbox.SetInputMode(termbox.InputEsc)
 			// ptmx, err := pty.Start(cmd)
 			ptmx, err := pty.StartWithSize(cmd, &pty.Winsize{Rows: 167, Cols: 47})
 			if err != nil {
 				panic(err)
 			}
-			
+
 			defer func() { _ = ptmx.Close() }() // Best effort.
 
 			pty.InheritSize(os.Stdin, ptmx)
@@ -58,7 +58,7 @@ func NewSystemCommand(fileToExec, description string) *commands.Command {
 			if err := termbox.ReInit(); err != nil {
 				panic(err)
 			}
-			termbox.SetInputMode(termbox.InputMouse)
+			// termbox.SetInputMode(termbox.InputMouse)
 
 			return dto.ExecResult(cmd.ProcessState.ExitCode())
 		}, true, description, "")

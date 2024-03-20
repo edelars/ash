@@ -1,32 +1,39 @@
 package io_manager
 
 import (
+	"bytes"
+	"encoding/binary"
+	"errors"
+	"strconv"
+	"time"
+
 	"ash/internal/commands"
 	"ash/internal/dto"
 	"ash/internal/io_manager/list"
 	"ash/pkg/escape_sequence_parser"
 	"ash/pkg/termbox"
-	"bytes"
-	"encoding/binary"
-	"errors"
-	"strconv"
 )
 
 const (
 	constManagerName = "InputOutput"
 	constEmptyRune   = 0x20
+
+	// Read() ticker configuration
+	constDefaultReadTimerStep     uint16 = 100
+	constDefaultReadTimerMaxValue uint16 = 500
 )
 
 type inputManager struct {
-	echoInput      bool
-	terminateKey   uint16
-	enterKey       uint16
-	cursorX        int
-	cursorY        int
-	manager        commands.CommandManagerIface
-	inputEventChan chan termbox.Event
-	inputBuffer    []byte
-	echoPrintFunc  func(b []byte)
+	echoInput          bool
+	readTickerDuration uint16
+	terminateKey       uint16
+	enterKey           uint16
+	cursorX            int
+	cursorY            int
+	manager            commands.CommandManagerIface
+	inputEventChan     chan termbox.Event
+	inputBuffer        []byte
+	echoPrintFunc      func(b []byte)
 
 	defaultBackgroundColor  termbox.Attribute
 	defaultForegroundColor  termbox.Attribute
@@ -49,8 +56,11 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 		}
 	}()
 
+	timer := time.NewTimer(time.Duration(i.readTickerDuration) * time.Millisecond)
+
 	select {
 	case ev := <-i.inputEventChan:
+		i.updateReadFuncTimer(true)
 		switch ev.Type {
 		case termbox.EventKey: // k 0 ch 19
 			l := make([]byte, 4)
@@ -73,7 +83,8 @@ func (i *inputManager) Read(res []byte) (n int, err error) {
 		default:
 			return 0, nil
 		}
-	default:
+	case <-timer.C:
+		i.updateReadFuncTimer(false)
 		return 0, nil
 	}
 }
@@ -506,6 +517,7 @@ func NewInputManager(pm promptManager,
 		selectedForegroundColor: colors.SelectedForegroundColor,
 		echoInput:               true,
 		escapeSequenceParser:    escapeSequenceParser,
+		readTickerDuration:      constDefaultReadTimerStep,
 	}
 	im.echoPrintFunc = im.echoPrintFunction
 	im.manager = commands.NewCommandManager(constManagerName, 3, false,
@@ -666,4 +678,17 @@ func isRGBColor(i escape_sequence_parser.EscapeColor) escape_sequence_parser.Esc
 		return i
 	}
 	return escape_sequence_parser.EscapeColor(0)
+}
+
+func (i *inputManager) updateReadFuncTimer(resetValue bool) {
+	switch resetValue {
+	case true:
+		i.readTickerDuration = constDefaultReadTimerStep
+	case false:
+		if uint16(i.readTickerDuration+constDefaultReadTimerStep) > constDefaultReadTimerMaxValue {
+			return
+		} else {
+			i.readTickerDuration = i.readTickerDuration + constDefaultReadTimerStep
+		}
+	}
 }

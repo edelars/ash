@@ -1,12 +1,13 @@
 package io_manager
 
 import (
+	"reflect"
+	"testing"
+
 	"ash/internal/colors_adapter"
 	"ash/internal/configuration"
 	"ash/pkg/escape_sequence_parser"
 	"ash/pkg/termbox"
-	"reflect"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -748,4 +749,32 @@ func Test_inputManager_generateEscapeSeqDeviceAttr(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_inputManager_updateReadFuncTimer(t *testing.T) {
+	pm := pmImpl{}
+
+	h := NewInputManager(
+		&pm,
+		nil,
+		configuration.CmdRemoveLeftSymbol,
+		colors_adapter.NewColorsAdapter(configuration.Colors{}),
+		13,
+		10,
+	)
+
+	assert.Equal(t, constDefaultReadTimerStep, h.readTickerDuration)
+
+	var v uint16
+	for i := constDefaultReadTimerStep; i < constDefaultReadTimerMaxValue; i = i + constDefaultReadTimerStep {
+		h.updateReadFuncTimer(false)
+		assert.Equal(t, h.readTickerDuration, uint16(i+constDefaultReadTimerStep))
+		v = h.readTickerDuration
+	}
+
+	h.updateReadFuncTimer(false)
+	assert.Equal(t, h.readTickerDuration, v)
+
+	h.updateReadFuncTimer(true)
+	assert.Equal(t, constDefaultReadTimerStep, h.readTickerDuration)
 }

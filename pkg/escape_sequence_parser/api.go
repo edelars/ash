@@ -285,7 +285,7 @@ mainLoop:
 			e.sequenceHeader = false
 		}
 	}
-	if e.currentResult != nil && e.terminated {
+	if (e.currentResult != nil && e.terminated) || (e.currentResult != nil && !e.sequenceHeader) {
 		res = append(res, e.currentResult)
 		e.currentResult = nil
 	}
